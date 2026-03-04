@@ -1,0 +1,368 @@
+'use client';
+
+import { Header } from '@/components/Header';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+interface Item {
+  id: string;
+  name: string;
+  unit: string;
+  minStock: number;
+  currentStock: number;
+  expiry: string;
+  responsible: string;
+  obs: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  items: Item[];
+}
+
+export default function Estoque() {
+  const [userRole] = useState<'ADMIN' | 'STAFF'>('ADMIN'); // Mocked user role
+  const [categories, setCategories] = useState<Category[]>([
+    {
+      id: '1',
+      name: 'Carnes',
+      icon: 'lunch_dining',
+      items: [
+        { id: '101', name: 'Filé de Frango', unit: 'KG', minStock: 2.0, currentStock: 3.5, expiry: '15/12/2023', responsible: 'João Silva', obs: 'Congelado' },
+        { id: '102', name: 'Carne Moída (Patinho)', unit: 'KG', minStock: 1.5, currentStock: 0.5, expiry: '20/12/2023', responsible: 'Ana Maria', obs: 'Comprar fresco' },
+      ]
+    },
+    {
+      id: '2',
+      name: 'Higiene',
+      icon: 'soap',
+      items: [
+        { id: '201', name: 'Sabonete Líquido', unit: 'UN', minStock: 2, currentStock: 4, expiry: '01/06/2025', responsible: 'Carlos P.', obs: 'Marca preferida' },
+      ]
+    }
+  ]);
+
+  const [activeCategoryModal, setActiveCategoryModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [activeItemModal, setActiveItemModal] = useState<{ categoryId: string | null }>({ categoryId: null });
+  const [editingItem, setEditingItem] = useState<{ categoryId: string, item: Item } | null>(null);
+
+  const [newCatName, setNewCatName] = useState('');
+  const [newItemData, setNewItemData] = useState<Omit<Item, 'id'>>({
+    name: '', unit: 'Unidade', minStock: 0, currentStock: 0, expiry: '', responsible: 'João Silva', obs: ''
+  });
+
+  const handleAddCategory = () => {
+    if (!newCatName) return;
+
+    if (editingCategory) {
+      setCategories(categories.map(cat => cat.id === editingCategory.id ? { ...cat, name: newCatName } : cat));
+      setEditingCategory(null);
+    } else {
+      const newCat: Category = {
+        id: Math.random().toString(),
+        name: newCatName,
+        icon: 'inventory_2',
+        items: []
+      };
+      setCategories([...categories, newCat]);
+    }
+    setNewCatName('');
+    setActiveCategoryModal(false);
+  };
+
+  const handleDeleteCategory = (catId: string) => {
+    if (userRole !== 'ADMIN') return alert('Apenas administradores podem excluir categorias.');
+    if (confirm('Deseja excluir esta categoria e todos os seus itens?')) {
+      setCategories(categories.filter(cat => cat.id !== catId));
+    }
+  };
+
+  const handleAddItem = () => {
+    if (!activeItemModal.categoryId || !newItemData.name) return;
+
+    if (editingItem) {
+      const updatedItem: Item = { ...newItemData, id: editingItem.item.id };
+      setCategories(categories.map(cat =>
+        cat.id === activeItemModal.categoryId
+          ? { ...cat, items: cat.items.map(i => i.id === editingItem.item.id ? updatedItem : i) }
+          : cat
+      ));
+      setEditingItem(null);
+    } else {
+      const newItem: Item = { ...newItemData, id: Math.random().toString() };
+      setCategories(categories.map(cat =>
+        cat.id === activeItemModal.categoryId
+          ? { ...cat, items: [...cat.items, newItem] }
+          : cat
+      ));
+    }
+    setNewItemData({ name: '', unit: 'Unidade', minStock: 0, currentStock: 0, expiry: '', responsible: 'João Silva', obs: '' });
+    setActiveItemModal({ categoryId: null });
+  };
+
+  const openEditItem = (categoryId: string, item: Item) => {
+    setEditingItem({ categoryId, item });
+    setNewItemData({
+      name: item.name,
+      unit: item.unit,
+      minStock: item.minStock,
+      currentStock: item.currentStock,
+      expiry: item.expiry,
+      responsible: item.responsible,
+      obs: item.obs
+    });
+    setActiveItemModal({ categoryId });
+  };
+
+  const handleDeleteItem = (catId: string, itemId: string) => {
+    if (userRole !== 'ADMIN') return alert('Apenas administradores podem excluir itens.');
+    if (confirm('Deseja excluir este item?')) {
+      setCategories(categories.map(cat =>
+        cat.id === catId ? { ...cat, items: cat.items.filter(i => i.id !== itemId) } : cat
+      ));
+    }
+  };
+
+  return (
+    <div className="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden">
+      <Header activeTab="estoque" />
+
+      <main className="flex-1 flex flex-col px-4 md:px-10 py-6 max-w-[1440px] mx-auto w-full gap-8">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-3xl md:text-4xl font-black leading-tight tracking-tight text-slate-900 dark:text-white">
+              Gestão de Estoque
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base">
+              Controle total de suprimentos e reposição estratégica.
+            </p>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+            <button
+              onClick={() => setActiveCategoryModal(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-sm hover:border-primary border border-slate-200 dark:border-slate-700 transition-all shadow-sm whitespace-nowrap"
+            >
+              <span className="material-symbols-outlined text-primary">category</span>
+              Nova Categoria
+            </button>
+            <button className="flex items-center gap-2 px-6 py-3 bg-primary text-slate-900 rounded-xl font-bold text-sm hover:brightness-110 transition-all shadow-lg shadow-primary/20 whitespace-nowrap">
+              <span className="material-symbols-outlined">bolt</span>
+              Entrada Rápida
+            </button>
+          </div>
+        </div>
+
+        {/* Categories Loop */}
+        <div className="flex flex-col gap-10">
+          {categories.map((category) => (
+            <motion.section
+              key={category.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col gap-4"
+            >
+              <div className="flex items-center justify-between border-b border-primary/20 pb-2">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <span className="material-symbols-outlined">{category.icon}</span>
+                  </div>
+                  <h2 className="text-xl font-black tracking-tight text-slate-800 dark:text-white uppercase">{category.name}</h2>
+                  <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] px-2 py-1 rounded-full font-bold">
+                    {category.items.length} ITENS
+                  </span>
+                </div>
+                <div className="flex gap-2 items-center">
+                  {userRole === 'ADMIN' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditingCategory(category);
+                          setNewCatName(category.name);
+                          setActiveCategoryModal(true);
+                        }}
+                        className="flex justify-center items-center size-8 text-slate-400 hover:text-primary transition-colors"
+                        title="Editar Categoria"
+                      >
+                        <span className="material-symbols-outlined text-sm">edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategory(category.id)}
+                        className="flex justify-center items-center size-8 text-slate-400 hover:text-red-500 transition-colors"
+                        title="Excluir Categoria"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setNewItemData({ name: '', unit: 'Unidade', minStock: 0, currentStock: 0, expiry: '', responsible: 'João Silva', obs: '' });
+                      setActiveItemModal({ categoryId: category.id });
+                    }}
+                    className="flex items-center gap-1 text-primary text-xs font-black uppercase hover:underline ml-2"
+                  >
+                    <span className="material-symbols-outlined text-sm">add</span> Adicionar Item
+                  </button>
+                </div>
+              </div>
+
+              {/* Responsive Table Container */}
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm scrollbar-thin">
+                <table className="w-full text-left text-sm border-collapse min-w-[800px]">
+                  <thead>
+                    <tr className="bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                      <th className="px-6 py-4">Produto</th>
+                      <th className="px-6 py-4">Unidade</th>
+                      <th className="px-6 py-4">Mínimo</th>
+                      <th className="px-6 py-4">Atual</th>
+                      <th className="px-6 py-4">Vencimento</th>
+                      <th className="px-6 py-4">Responsável</th>
+                      <th className="px-6 py-4 text-center">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {category.items.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-10 text-center text-slate-400 italic">Nenhum item cadastrado nesta categoria.</td>
+                      </tr>
+                    ) : (
+                      category.items.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="font-bold text-slate-900 dark:text-white uppercase tracking-tight">{item.name}</span>
+                              <span className="text-[10px] text-slate-400 italic">{item.obs}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">{item.unit}</td>
+                          <td className="px-6 py-4 font-bold text-slate-400">{item.minStock}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 rounded-full font-black text-xs ${item.currentStock <= item.minStock
+                              ? 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400'
+                              : 'bg-green-100 text-green-600 dark:bg-green-950/40 dark:text-green-400'
+                              }`}>
+                              {item.currentStock}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-400">{item.expiry}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="size-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary ring-2 ring-white dark:ring-slate-800">
+                                {item.responsible.substring(0, 2).toUpperCase()}
+                              </div>
+                              <span className="text-slate-600 dark:text-slate-300 font-medium">{item.responsible}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {userRole === 'ADMIN' && (
+                                <>
+                                  <button onClick={() => openEditItem(category.id, item)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary transition-colors flex items-center justify-center shadow-sm">
+                                    <span className="material-symbols-outlined text-lg">edit</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteItem(category.id, item.id)}
+                                    className="size-8 rounded-lg bg-red-50 dark:bg-red-950/20 text-red-400 hover:text-red-600 transition-colors flex items-center justify-center shadow-sm"
+                                  >
+                                    <span className="material-symbols-outlined text-lg">delete</span>
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </motion.section>
+          ))}
+        </div>
+      </main>
+
+      {/* MODAL: Nova Categoria */}
+      <AnimatePresence>
+        {activeCategoryModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveCategoryModal(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-2xl">
+              <h2 className="text-2xl font-black mb-6 dark:text-white uppercase tracking-tight">{editingCategory ? 'Renomear Categoria' : 'Criar Nova Categoria'}</h2>
+              <div className="flex flex-col gap-4">
+                <input
+                  autoFocus
+                  className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary outline-none dark:text-white"
+                  placeholder="Nome da categoria (ex: Limpeza)"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                />
+                <div className="flex gap-3 mt-4">
+                  <button onClick={() => setActiveCategoryModal(false)} className="flex-1 py-4 font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase text-xs">Cancelar</button>
+                  <button onClick={handleAddCategory} className="flex-1 py-4 bg-primary text-slate-900 rounded-xl font-bold shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all text-xs uppercase">Confirmar</button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL: Novo Item */}
+      <AnimatePresence>
+        {activeItemModal.categoryId && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveItemModal({ categoryId: null })} className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" />
+            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
+              <h2 className="text-2xl font-black mb-6 dark:text-white uppercase tracking-tight">{editingItem ? 'Editar Item' : 'Adicionar Item'}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nome do Produto</label>
+                  <input className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={newItemData.name} onChange={(e) => setNewItemData({ ...newItemData, name: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Unidade</label>
+                  <select
+                    className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white appearance-none cursor-pointer font-bold text-sm"
+                    value={newItemData.unit}
+                    onChange={(e) => setNewItemData({ ...newItemData, unit: e.target.value })}
+                  >
+                    <option value="Unidade">Unidade</option>
+                    <option value="KG">KG</option>
+                    <option value="Gramas">Gramas</option>
+                    <option value="Peso">Peso</option>
+                    <option value="Litros">Litros</option>
+                    <option value="ML">ML</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Estoque Min.</label>
+                  <input type="number" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={newItemData.minStock} onChange={(e) => setNewItemData({ ...newItemData, minStock: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Estoque Atual</label>
+                  <input type="number" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={newItemData.currentStock} onChange={(e) => setNewItemData({ ...newItemData, currentStock: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Vencimento</label>
+                  <input type="text" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="DD/MM/AAAA" value={newItemData.expiry} onChange={(e) => setNewItemData({ ...newItemData, expiry: e.target.value })} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Observações</label>
+                  <input className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Opcional..." value={newItemData.obs} onChange={(e) => setNewItemData({ ...newItemData, obs: e.target.value })} />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-8">
+                <button onClick={() => setActiveItemModal({ categoryId: null })} className="flex-1 py-4 font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase text-xs">Descartar</button>
+                <button onClick={handleAddItem} className="flex-1 py-4 bg-primary text-slate-900 rounded-xl font-bold shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all text-xs uppercase">Salvar Produto</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
