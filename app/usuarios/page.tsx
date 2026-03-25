@@ -4,6 +4,7 @@ import { Header } from '@/components/Header';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { getSelectedResidenceObj } from '../dashboard/actions';
 
 interface Role {
   id: string;
@@ -11,19 +12,31 @@ interface Role {
   color: string;
 }
 
+// We map Discord-like roles visually
+const RESIDENCE_ROLES = [
+  { id: 'Admin', name: 'Administrador', color: '#16a34a' },
+  { id: 'Staff', name: 'Membro (Staff)', color: '#3b82f6' }
+];
+
 interface UserProfile {
   id: string;
   full_name: string;
+  nickname?: string;
+  avatar_url?: string;
   email?: string; // We might not have email directly in profiles unless we join auth.users or store it
-  houses: string[];
   roles: Role[];
+  roleName: string; // Add roleName explicitly since it's now 1 role per residence
   initials: string;
+  isPending?: boolean;
+  inviteId?: string;
 }
 
 export default function Usuarios() {
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
+  const [residenceId, setResidenceId] = useState<string | null>(null);
+  const [residenceOwnerId, setResidenceOwnerId] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
   const supabase = createClient();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,9 +45,12 @@ export default function Usuarios() {
   // Form State
   const [formData, setFormData] = useState({
     full_name: '',
-    houses: '',
-    selectedRoles: [] as string[]
+    nickname: '',
+    email: '',
+    role: 'Staff'
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const getInitials = (name: string) => {
     if (!name) return '??';
@@ -43,38 +59,93 @@ export default function Usuarios() {
 
   const fetchUsersAndRoles = async () => {
     setLoading(true);
-    // Fetch Roles
-    const { data: rolesData } = await supabase.from('roles').select('*');
-    if (rolesData) setAvailableRoles(rolesData);
 
-    // Fetch Profiles with their assigned roles 
-    // Note: Since auth.users is protected, we display what we have in profiles
-    const { data: profilesData } = await supabase
-      .from('user_profiles')
+    const res = await getSelectedResidenceObj();
+    if (!res?.id) return;
+    setResidenceId(res.id);
+
+    const { data: authData } = await supabase.auth.getUser();
+    const currentUserId = authData.user?.id;
+
+    // 1. Fetch residence details to know the owner
+    const { data: residenceInfo } = await supabase.from('residences').select('owner_id').eq('id', res.id).single();
+    if (residenceInfo) {
+      setResidenceOwnerId(residenceInfo.owner_id);
+      setIsOwner(residenceInfo.owner_id === currentUserId);
+    }
+
+    // 2. Fetch the owner profile
+    const { data: ownerProfile } = await supabase.from('user_profiles').select('*').eq('id', residenceInfo?.owner_id).single();
+
+    // 3. Fetch residence members and their profiles
+    const { data: membersData } = await supabase
+      .from('residence_members')
       .select(`
-        id,
-        full_name,
-        houses,
-        user_roles (
-          role_id,
-          roles ( id, name, color )
-        )
-      `);
+        role,
+        user_profiles:user_id (*)
+      `)
+      .eq('residence_id', res.id);
 
-    if (profilesData) {
-      const formattedUsers: UserProfile[] = profilesData.map((p: any) => {
-        const userRoles = p.user_roles?.map((ur: any) => ur.roles).filter(Boolean) || [];
-        return {
+    // Combine them
+    const formattedUsers: UserProfile[] = [];
+
+    if (ownerProfile) {
+      formattedUsers.push({
+        id: ownerProfile.id,
+        full_name: ownerProfile.full_name,
+        nickname: ownerProfile.nickname,
+        avatar_url: ownerProfile.avatar_url,
+        email: ownerProfile.email || 'Proprietário',
+        roles: [{ id: 'Owner', name: 'Dono (Owner)', color: '#9333ea' }],
+        roleName: 'Owner',
+        initials: getInitials(ownerProfile.full_name)
+      });
+    }
+
+    if (membersData) {
+      membersData.forEach((m: any) => {
+        const p = m.user_profiles;
+        if (!p) return;
+
+        const roleObj = RESIDENCE_ROLES.find(r => r.id === m.role) || { id: m.role, name: m.role, color: 'bg-slate-100 text-slate-700' };
+
+        formattedUsers.push({
           id: p.id,
           full_name: p.full_name,
-          email: 'usuario@auth.local', // Placeholder as auth.users is not exposed by default
-          houses: p.houses || [],
-          roles: userRoles,
+          nickname: p.nickname,
+          avatar_url: p.avatar_url,
+          email: p.email || 'Membro',
+          roles: [roleObj],
+          roleName: m.role,
           initials: getInitials(p.full_name)
-        };
+        });
       });
-      setUsers(formattedUsers);
     }
+
+    // 4. Fetch pending invites
+    const { data: invitesData } = await supabase
+      .from('residence_invites')
+      .select('*')
+      .eq('residence_id', res.id);
+
+    if (invitesData) {
+      invitesData.forEach((invite: any) => {
+        const roleObj = RESIDENCE_ROLES.find(r => r.id === invite.role) || { id: invite.role, name: invite.role, color: 'bg-slate-100 text-slate-700' };
+
+        formattedUsers.push({
+          id: invite.id, // we use the invite ID as the list key
+          full_name: invite.email, // Display email as name for pending invites
+          email: invite.email,
+          roles: [roleObj],
+          roleName: invite.role,
+          initials: getInitials(invite.email),
+          isPending: true,
+          inviteId: invite.id
+        });
+      });
+    }
+
+    setUsers(formattedUsers.sort((a, b) => a.full_name.localeCompare(b.full_name)));
     setLoading(false);
   };
 
@@ -86,58 +157,123 @@ export default function Usuarios() {
     setEditingUser(user);
     setFormData({
       full_name: user.full_name,
-      houses: user.houses.join(', '),
-      selectedRoles: user.roles.map(r => r.id),
+      nickname: user.nickname || '',
+      email: '', // Don't allow editing email here yet
+      role: user.roleName === 'Owner' ? 'Owner' : user.roleName,
     });
+    setAvatarFile(null);
     setIsModalOpen(true);
   };
 
   const handleSave = async () => {
     if (!formData.full_name) return;
+    setIsUploading(true);
 
-    const parsedHouses = formData.houses.split(',').map(h => h.trim()).filter(Boolean);
+    let uploadedAvatarUrl = editingUser?.avatar_url;
+
+    if (avatarFile) {
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUserId = authData.user?.id;
+
+      if (currentUserId) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${currentUserId}/${Date.now()}.${fileExt}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, avatarFile, { upsert: true });
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+          uploadedAvatarUrl = publicUrl;
+        }
+      }
+    }
 
     if (editingUser) {
       // 1. Update Profile
       await supabase.from('user_profiles').update({
         full_name: formData.full_name,
-        houses: parsedHouses
+        nickname: formData.nickname,
+        avatar_url: uploadedAvatarUrl
       }).eq('id', editingUser.id);
 
-      // 2. Update Roles (Delete all current, then insert new)
-      await supabase.from('user_roles').delete().eq('user_id', editingUser.id);
-
-      if (formData.selectedRoles.length > 0) {
-        const newRoles = formData.selectedRoles.map(rId => ({
-          user_id: editingUser.id,
-          role_id: rId
-        }));
-        await supabase.from('user_roles').insert(newRoles);
+      // 2. Update Role (Only if it's not the owner and role changed)
+      if (editingUser.roleName !== 'Owner' && formData.role !== 'Owner') {
+        await supabase.from('residence_members').update({ role: formData.role }).match({ residence_id: residenceId, user_id: editingUser.id });
       }
     } else {
-      // Create new invite logic would go here. For now, we only edit existing profiles.
-      alert("Para criar um novo colaborador, ele deve se cadastrar via tela de Login primeiro. Convites em breve.");
+      // Simulate invite / Add member workflow
+      if (!formData.email) {
+        alert("Preencha o e-mail para adicionar um membro.");
+        return setIsUploading(false);
+      }
+
+      // Look up user by email (Note: You may need a secure RPC for this if emails are not public. Assuming email is stored in user_profiles for MVP)
+      const { data: foundUser } = await supabase.from('user_profiles').select('id, full_name').ilike('email', formData.email).single();
+
+      if (!foundUser) {
+        // Invite Unregistered User
+        const { error: inviteError } = await supabase.from('residence_invites').insert({
+          residence_id: residenceId,
+          email: formData.email.toLowerCase().trim(),
+          role: formData.role
+        });
+
+        if (inviteError) {
+          if (inviteError.code === '23505') {
+            alert("Este e-mail já possui um convite pendente para esta residência.");
+          } else {
+            alert("Erro ao convidar: " + inviteError.message);
+          }
+        } else {
+          alert("Convite registrado! O usuário poderá criar sua conta na tela de login e será adicionado automaticamente.");
+        }
+      } else if (foundUser.id === residenceOwnerId) {
+        alert("Este usuário já é o dono da residência.");
+      } else {
+        const { error } = await supabase.from('residence_members').insert({
+          residence_id: residenceId,
+          user_id: foundUser.id,
+          role: formData.role
+        });
+        if (error) {
+          if (error.code === '23505') {
+            alert("Este usuário já é um membro.");
+          } else {
+            alert("Erro ao adicionar membro: " + error.message);
+          }
+        } else {
+          alert("Usuário adicionado com sucesso!");
+        }
+      }
     }
 
+    setIsUploading(false);
     setIsModalOpen(false);
     setEditingUser(null);
     fetchUsersAndRoles();
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja remover as permissões deste usuário? Isso excluirá o perfil dele.')) {
-      await supabase.from('user_profiles').delete().eq('id', id);
+  const handleDelete = async (id: string, isPending?: boolean, inviteId?: string) => {
+    if (confirm(isPending ? 'Tem certeza que deseja cancelar este convite?' : 'Tem certeza que deseja remover este usuário da residência?')) {
+      if (isPending && inviteId) {
+        await supabase.from('residence_invites').delete().eq('id', inviteId);
+      } else {
+        await supabase.from('residence_members').delete().match({ residence_id: residenceId, user_id: id });
+      }
       fetchUsersAndRoles();
     }
   };
 
   const toggleRoleSelection = (roleId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedRoles: prev.selectedRoles.includes(roleId)
-        ? prev.selectedRoles.filter(id => id !== roleId)
-        : [...prev.selectedRoles, roleId]
-    }));
+    // Only 'Admin' and 'Staff' allowed to be manually selected
+    setFormData({
+      ...formData,
+      role: roleId
+    });
   };
 
   return (
@@ -167,7 +303,7 @@ export default function Usuarios() {
             </div>
           </motion.div>
 
-          {availableRoles.slice(0, 2).map((role, i) => (
+          {RESIDENCE_ROLES.slice(0, 2).map((role, i) => (
             <motion.div key={role.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 * (i + 1) }} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
               <div>
                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Membros: {role.name}</p>
@@ -186,7 +322,6 @@ export default function Usuarios() {
               <tr className="bg-slate-50 dark:bg-slate-800/50">
                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Colaborador</th>
                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Cargos (Roles)</th>
-                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Casas Vinculadas</th>
                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Ações</th>
               </tr>
             </thead>
@@ -195,31 +330,54 @@ export default function Usuarios() {
                 <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-4">
-                      <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-xs text-slate-400 border border-slate-200 dark:border-slate-700">{user.initials}</div>
+                      {user.avatar_url ? (
+                        <div className="size-10 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
+                          <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-xs text-slate-400 border border-slate-200 dark:border-slate-700">{user.initials}</div>
+                      )}
                       <div>
-                        <span className="font-bold text-slate-900 dark:text-white uppercase tracking-tight block">{user.full_name}</span>
-                        <span className="text-[10px] text-slate-400">{user.id.substring(0, 8)}</span>
+                        <span className="font-bold text-slate-900 dark:text-white uppercase tracking-tight block flex items-center gap-2">
+                          {user.full_name}
+                          {user.isPending && (
+                            <span className="px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase tracking-widest border border-orange-200 dark:border-orange-800/50">
+                              Pendente
+                            </span>
+                          )}
+                        </span>
+                        {user.nickname ? (
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">@{user.nickname}</span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 block">{user.isPending ? user.email : user.id.substring(0, 8)}</span>
+                        )}
                       </div>
                     </div>
                   </td>
                   <td className="px-8 py-5">
                     <div className="flex flex-wrap gap-2">
                       {user.roles.length > 0 ? user.roles.map(r => (
-                        <span key={r.id} style={{ borderColor: r.color, color: r.color, backgroundColor: `${r.color}15` }} className="px-3 py-1 rounded border text-[10px] font-black uppercase tracking-widest">
+                        <span key={r.id} style={{ borderColor: r.color, color: r.color, backgroundColor: `${r.color}15` }} className="px-3 py-1.5 rounded border text-[10px] font-black uppercase tracking-widest">
                           {r.name}
                         </span>
                       )) : <span className="text-xs italic text-slate-400">Sem Cargo</span>}
                     </div>
                   </td>
-                  <td className="px-8 py-5 text-slate-500 dark:text-slate-400 font-bold text-xs">{user.houses.join(', ') || 'Nenhuma'}</td>
                   <td className="px-8 py-5 text-right">
                     <div className="flex justify-end gap-3">
-                      <button onClick={() => openEdit(user)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-primary transition-colors shadow-sm" title="Editar">
-                        <span className="material-symbols-outlined text-[16px]">edit</span>
-                      </button>
-                      <button onClick={() => handleDelete(user.id)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors shadow-sm" title="Excluir">
-                        <span className="material-symbols-outlined text-[16px]">delete</span>
-                      </button>
+                      {/* Assuming canEditOthers is a prop or state variable */}
+                      {/* For simplicity, let's assume `true` for now or add a check for owner/admin */}
+                      {/* Replace with actual logic for `canEditOthers` */}
+                      {true && user.roleName !== 'Owner' && !user.isPending && (
+                        <button onClick={() => openEdit(user)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-primary transition-colors shadow-sm" title="Editar">
+                          <span className="material-symbols-outlined text-[16px]">edit</span>
+                        </button>
+                      )}
+                      {true && user.roleName !== 'Owner' && (
+                        <button onClick={() => handleDelete(user.id, user.isPending, user.inviteId)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors shadow-sm" title={user.isPending ? "Cancelar Convite" : "Excluir"}>
+                          <span className="material-symbols-outlined text-[16px]">{user.isPending ? 'cancel' : 'delete'}</span>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -242,54 +400,120 @@ export default function Usuarios() {
                 <p className="text-slate-400 text-sm font-bold mt-2">Gerencie permissões no formato Discord.</p>
               </div>
 
-              <div className="grid grid-cols-1 gap-5">
-                <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nome Completo</label>
-                  <input
-                    type="text"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
-                  />
-                </div>
+              <div className="flex flex-col gap-5 mt-6">
+                {editingUser && !editingUser.isPending ? ( // Only show profile fields for existing, non-pending users
+                  <>
+                    <div className="flex items-center gap-6">
+                      <div className="relative group">
+                        {editingUser?.avatar_url || avatarFile ? (
+                          <div
+                            className="size-16 rounded-2xl bg-cover bg-center shadow-inner border border-slate-200 dark:border-slate-700 shrink-0"
+                            style={{ backgroundImage: `url(${avatarFile ? URL.createObjectURL(avatarFile) : editingUser?.avatar_url})` }}
+                          />
+                        ) : (
+                          <div className="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-xl shrink-0 border border-primary/20">
+                            {getInitials(formData.full_name)}
+                          </div>
+                        )}
+
+                        {/* Status badge */}
+                        <div className="absolute -bottom-1 -right-1 size-5 bg-green-500 border-2 border-white dark:border-slate-800 rounded-full"></div>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <label className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300">
+                          Alterar Imagem
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files.length > 0) {
+                                setAvatarFile(e.target.files[0]);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nome Completo</label>
+                      <input
+                        type="text"
+                        value={formData.full_name}
+                        onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                        className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Apelido (Nickname)</label>
+                      <input
+                        type="text"
+                        placeholder="@seunick"
+                        value={formData.nickname}
+                        onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                        className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">E-mail do Colaborador</label>
+                    <input
+                      type="email"
+                      placeholder="email@exemplo.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
+                    />
+                    <p className="text-xs text-slate-500 mt-2 ml-2">O usuário deve estar previamente cadastrado no sistema.</p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Atribuir Cargos (Roles)</label>
-                  <div className="flex flex-wrap gap-2 p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
-                    {availableRoles.map(role => {
-                      const isSelected = formData.selectedRoles.includes(role.id);
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {RESIDENCE_ROLES.map((role) => {
+                      const isSelected = formData.role === role.id;
                       return (
-                        <button
+                        <div
                           key={role.id}
                           onClick={() => toggleRoleSelection(role.id)}
-                          style={{
-                            borderColor: role.color,
-                            backgroundColor: isSelected ? role.color : 'transparent',
-                            color: isSelected ? '#fff' : role.color
-                          }}
-                          className={`px-3 py-1.5 rounded-lg border-2 text-xs font-black uppercase tracking-widest transition-all ${isSelected ? 'shadow-md scale-105' : 'hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+                          className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected
+                            ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                            : 'border-slate-200 dark:border-slate-800 hover:border-primary/50 bg-white dark:bg-slate-900'
+                            }`}
                         >
-                          {role.name}
-                        </button>
+                          <div className="size-10 rounded-full flex items-center justify-center font-black" style={{ backgroundColor: `${role.color}20`, color: role.color }}>
+                            <span className="material-symbols-outlined">{role.id === 'Admin' ? 'shield_person' : 'person'}</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className={`font-bold ${isSelected ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>{role.name}</h4>
+                          </div>
+                          <div className={`size-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-primary bg-primary' : 'border-slate-300 dark:border-slate-700'}`}>
+                            {isSelected && <span className="material-symbols-outlined text-white text-sm font-black">check</span>}
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Casas Vinculadas (Separadas por vírgula)</label>
-                  <input
-                    type="text"
-                    value={formData.houses}
-                    onChange={(e) => setFormData({ ...formData, houses: e.target.value })}
-                    className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
-                  />
-                </div>
               </div>
 
               <div className="flex flex-col gap-3 mt-8">
-                <button onClick={handleSave} className="w-full h-14 bg-primary text-slate-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-xl">Salvar</button>
-                <button onClick={() => setIsModalOpen(false)} className="w-full h-14 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">Cancelar</button>
+                <button onClick={handleSave} disabled={isUploading} className="w-full h-14 bg-primary text-slate-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                  {isUploading ? (
+                    <>
+                      <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                      <span>Salvando...</span>
+                    </>
+                  ) : (
+                    "Salvar"
+                  )}
+                </button>
+                <button onClick={() => setIsModalOpen(false)} disabled={isUploading} className="w-full h-14 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-all disabled:opacity-50">Cancelar</button>
               </div>
             </motion.div>
           </div>

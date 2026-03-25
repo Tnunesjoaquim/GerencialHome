@@ -1,8 +1,10 @@
 'use client';
 
 import { Header } from '@/components/Header';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getSelectedResidenceObj } from '../dashboard/actions';
+import { createClient } from '@/utils/supabase/client';
 
 interface Item {
   id: string;
@@ -23,26 +25,48 @@ interface Category {
 }
 
 export default function Estoque() {
-  const [userRole] = useState<'ADMIN' | 'STAFF'>('ADMIN'); // Mocked user role
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      id: '1',
-      name: 'Carnes',
-      icon: 'lunch_dining',
-      items: [
-        { id: '101', name: 'Filé de Frango', unit: 'KG', minStock: 2.0, currentStock: 3.5, expiry: '15/12/2023', responsible: 'João Silva', obs: 'Congelado' },
-        { id: '102', name: 'Carne Moída (Patinho)', unit: 'KG', minStock: 1.5, currentStock: 0.5, expiry: '20/12/2023', responsible: 'Ana Maria', obs: 'Comprar fresco' },
-      ]
-    },
-    {
-      id: '2',
-      name: 'Higiene',
-      icon: 'soap',
-      items: [
-        { id: '201', name: 'Sabonete Líquido', unit: 'UN', minStock: 2, currentStock: 4, expiry: '01/06/2025', responsible: 'Carlos P.', obs: 'Marca preferida' },
-      ]
-    }
-  ]);
+  const [userRole, setUserRole] = useState<'ADMIN' | 'STAFF'>('STAFF');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [residence, setResidence] = useState<any>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    getSelectedResidenceObj().then(res => {
+      setResidence(res);
+      if (res?.id) fetchInventory(res.id);
+    });
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase.from('user_profiles').select('role').eq('id', user.id).single().then(({ data }) => {
+          if (data?.role) setUserRole(data.role as 'ADMIN' | 'STAFF');
+        });
+      }
+    });
+  }, []);
+
+  const fetchInventory = async (rId: string) => {
+    const { data: cats } = await supabase.from('inventory_categories').select('*').eq('residence_id', rId);
+    if (!cats) return;
+
+    const { data: items } = await supabase.from('inventory_items').select('*').in('category_id', cats.map((c: any) => c.id));
+
+    setCategories(cats.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      icon: c.icon,
+      items: (items || []).filter((i: any) => i.category_id === c.id).map((i: any) => ({
+        id: i.id,
+        name: i.name,
+        unit: i.unit,
+        minStock: Number(i.min_stock),
+        currentStock: Number(i.current_stock),
+        expiry: i.expiry || '',
+        responsible: i.responsible,
+        obs: i.obs || ''
+      }))
+    })));
+  };
 
   const [activeCategoryModal, setActiveCategoryModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -54,50 +78,87 @@ export default function Estoque() {
     name: '', unit: 'Unidade', minStock: 0, currentStock: 0, expiry: '', responsible: 'João Silva', obs: ''
   });
 
-  const handleAddCategory = () => {
-    if (!newCatName) return;
+  const handleAddCategory = async () => {
+    if (!newCatName || !residence?.id) return;
 
     if (editingCategory) {
-      setCategories(categories.map(cat => cat.id === editingCategory.id ? { ...cat, name: newCatName } : cat));
+      const { error } = await supabase.from('inventory_categories').update({ name: newCatName }).eq('id', editingCategory.id);
+      if (!error) {
+        setCategories(categories.map(cat => cat.id === editingCategory.id ? { ...cat, name: newCatName } : cat));
+      }
       setEditingCategory(null);
     } else {
-      const newCat: Category = {
-        id: Math.random().toString(),
+      const { data, error } = await supabase.from('inventory_categories').insert([{
+        residence_id: residence.id,
         name: newCatName,
-        icon: 'inventory_2',
-        items: []
-      };
-      setCategories([...categories, newCat]);
+        icon: 'inventory_2'
+      }]).select().single();
+
+      if (!error && data) {
+        const newCat: Category = {
+          id: data.id,
+          name: data.name,
+          icon: data.icon,
+          items: []
+        };
+        setCategories([...categories, newCat]);
+      }
     }
     setNewCatName('');
     setActiveCategoryModal(false);
   };
 
-  const handleDeleteCategory = (catId: string) => {
+  const handleDeleteCategory = async (catId: string) => {
     if (userRole !== 'ADMIN') return alert('Apenas administradores podem excluir categorias.');
     if (confirm('Deseja excluir esta categoria e todos os seus itens?')) {
-      setCategories(categories.filter(cat => cat.id !== catId));
+      const { error } = await supabase.from('inventory_categories').delete().eq('id', catId);
+      if (!error) setCategories(categories.filter(cat => cat.id !== catId));
     }
   };
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (!activeItemModal.categoryId || !newItemData.name) return;
 
     if (editingItem) {
-      const updatedItem: Item = { ...newItemData, id: editingItem.item.id };
-      setCategories(categories.map(cat =>
-        cat.id === activeItemModal.categoryId
-          ? { ...cat, items: cat.items.map(i => i.id === editingItem.item.id ? updatedItem : i) }
-          : cat
-      ));
+      const { error } = await supabase.from('inventory_items').update({
+        name: newItemData.name,
+        unit: newItemData.unit,
+        min_stock: newItemData.minStock,
+        current_stock: newItemData.currentStock,
+        expiry: newItemData.expiry,
+        responsible: newItemData.responsible,
+        obs: newItemData.obs
+      }).eq('id', editingItem.item.id);
+
+      if (!error) {
+        const updatedItem: Item = { ...newItemData, id: editingItem.item.id };
+        setCategories(categories.map(cat =>
+          cat.id === activeItemModal.categoryId
+            ? { ...cat, items: cat.items.map(i => i.id === editingItem.item.id ? updatedItem : i) }
+            : cat
+        ));
+      }
       setEditingItem(null);
     } else {
-      const newItem: Item = { ...newItemData, id: Math.random().toString() };
-      setCategories(categories.map(cat =>
-        cat.id === activeItemModal.categoryId
-          ? { ...cat, items: [...cat.items, newItem] }
-          : cat
-      ));
+      const { data, error } = await supabase.from('inventory_items').insert([{
+        category_id: activeItemModal.categoryId,
+        name: newItemData.name,
+        unit: newItemData.unit,
+        min_stock: newItemData.minStock,
+        current_stock: newItemData.currentStock,
+        expiry: newItemData.expiry,
+        responsible: newItemData.responsible,
+        obs: newItemData.obs
+      }]).select().single();
+
+      if (!error && data) {
+        const newItem: Item = { ...newItemData, id: data.id };
+        setCategories(categories.map(cat =>
+          cat.id === activeItemModal.categoryId
+            ? { ...cat, items: [...cat.items, newItem] }
+            : cat
+        ));
+      }
     }
     setNewItemData({ name: '', unit: 'Unidade', minStock: 0, currentStock: 0, expiry: '', responsible: 'João Silva', obs: '' });
     setActiveItemModal({ categoryId: null });
@@ -117,12 +178,15 @@ export default function Estoque() {
     setActiveItemModal({ categoryId });
   };
 
-  const handleDeleteItem = (catId: string, itemId: string) => {
+  const handleDeleteItem = async (catId: string, itemId: string) => {
     if (userRole !== 'ADMIN') return alert('Apenas administradores podem excluir itens.');
     if (confirm('Deseja excluir este item?')) {
-      setCategories(categories.map(cat =>
-        cat.id === catId ? { ...cat, items: cat.items.filter(i => i.id !== itemId) } : cat
-      ));
+      const { error } = await supabase.from('inventory_items').delete().eq('id', itemId);
+      if (!error) {
+        setCategories(categories.map(cat =>
+          cat.id === catId ? { ...cat, items: cat.items.filter(i => i.id !== itemId) } : cat
+        ));
+      }
     }
   };
 

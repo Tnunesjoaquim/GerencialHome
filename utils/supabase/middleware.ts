@@ -34,19 +34,28 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    if (
-        !user &&
-        !request.nextUrl.pathname.startsWith('/login') &&
-        !request.nextUrl.pathname.startsWith('/auth')
-    ) {
+    const hasSelectedResidence = request.cookies.has('selected_residence')
+    const isLoginPath = request.nextUrl.pathname.startsWith('/login')
+    const isSelectResidencePath = request.nextUrl.pathname.startsWith('/selecionar-residencia')
+    const isAuthPath = request.nextUrl.pathname.startsWith('/auth')
+    const isRootPath = request.nextUrl.pathname === '/'
+
+    if (!user && !isLoginPath && !isAuthPath) {
         // no user, potentially respond by redirecting the user to the login page
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)
     }
 
-    // If the user is logged in and trying to access the login page, redirect them to dashboard
-    if (user && request.nextUrl.pathname === '/login') {
+    // If logged in but no residence selected, and trying to access a protected route
+    if (user && !hasSelectedResidence && !isLoginPath && !isAuthPath && !isSelectResidencePath) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/selecionar-residencia'
+        return NextResponse.redirect(url)
+    }
+
+    // If the user is logged in, has a residence, and trying to access login or root
+    if (user && hasSelectedResidence && (isLoginPath || isRootPath)) {
         const url = request.nextUrl.clone()
         url.pathname = '/dashboard'
         return NextResponse.redirect(url)

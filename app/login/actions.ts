@@ -19,15 +19,24 @@ export async function login(formData: FormData) {
     }
 
     revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    redirect('/selecionar-residencia')
 }
 
 export async function signup(formData: FormData) {
     const supabase = await createClient()
 
+    const password = formData.get('password') as string;
+    const confirmPassword = formData.get('confirm_password') as string;
+
+    const avatarFile = formData.get('avatar') as File | null;
+
+    if (password !== confirmPassword) {
+        redirect('/login?error=As senhas não coincidem.')
+    }
+
     const data = {
         email: formData.get('email') as string,
-        password: formData.get('password') as string,
+        password: password,
         options: {
             data: {
                 full_name: formData.get('name') as string,
@@ -35,14 +44,35 @@ export async function signup(formData: FormData) {
         }
     }
 
-    const { error } = await supabase.auth.signUp(data)
+    const { data: authData, error } = await supabase.auth.signUp(data)
 
     if (error) {
-        redirect('/login?error=Erro ao criar conta. Tente novamente.')
+        redirect(`/login?error=${encodeURIComponent('Erro ao criar conta: ' + error.message)}`)
+    }
+
+    if (avatarFile && avatarFile.size > 0 && authData.user) {
+        const fileExt = avatarFile.name.split('.').pop() || 'jpg';
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${authData.user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(filePath, avatarFile);
+
+        if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            await supabase
+                .from('user_profiles')
+                .update({ avatar_url: publicUrl })
+                .eq('id', authData.user.id);
+        }
     }
 
     revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    redirect('/selecionar-residencia')
 }
 
 export async function logout() {

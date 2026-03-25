@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from '@/hooks/useTheme';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createClient } from '@/utils/supabase/client';
 
 export function Header({ activeTab }: { activeTab: string }) {
   const { theme, toggleTheme } = useTheme();
@@ -12,10 +13,52 @@ export function Header({ activeTab }: { activeTab: string }) {
   const pathname = usePathname();
 
   const [mounted, setMounted] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ full_name: string; avatar_url: string | null; initials: string; role_name: string } | null>(null);
+  const supabase = createClient();
 
   useEffect(() => {
     setMounted(true);
+    fetchUserProfile();
   }, []);
+
+  const fetchUserProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select(`
+        full_name,
+        avatar_url,
+        user_roles (
+          roles (
+            name
+          )
+        )
+      `)
+      .eq('id', user.id)
+      .single();
+
+    if (profile) {
+      const getInitials = (name: string) => {
+        if (!name) return '??';
+        return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      };
+
+      let roleName = 'Usuário';
+      if (profile.user_roles && profile.user_roles.length > 0) {
+        const rolesObj: any = profile.user_roles[0].roles;
+        roleName = rolesObj?.name || 'Usuário';
+      }
+
+      setUserProfile({
+        full_name: profile.full_name,
+        avatar_url: profile.avatar_url,
+        initials: getInitials(profile.full_name),
+        role_name: roleName
+      });
+    }
+  };
 
   // Prevenir scroll quando o menu estiver aberto
   useEffect(() => {
@@ -83,7 +126,13 @@ export function Header({ activeTab }: { activeTab: string }) {
 
           {/* Profile & Notifications (Desktop) */}
           <div className="hidden sm:flex items-center gap-3 pl-2 border-l border-slate-200 dark:border-slate-700 ml-2">
-            <div className="size-10 md:size-11 rounded-2xl bg-center bg-cover border-2 border-primary/20 hover:border-primary transition-colors cursor-pointer" style={{ backgroundImage: 'url("https://i.pravatar.cc/150?u=joao")' }}></div>
+            {userProfile?.avatar_url ? (
+              <div className="size-10 md:size-11 rounded-2xl bg-center bg-cover border-2 border-primary/20 hover:border-primary transition-colors cursor-pointer" style={{ backgroundImage: `url(${userProfile.avatar_url})` }}></div>
+            ) : (
+              <div className="size-10 md:size-11 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-xs text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-primary transition-colors cursor-pointer">
+                {userProfile?.initials || '??'}
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -138,10 +187,16 @@ export function Header({ activeTab }: { activeTab: string }) {
 
               {/* Sidebar Profile Card */}
               <div className="mx-6 mt-6 p-4 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center gap-4">
-                <div className="size-12 rounded-2xl bg-center bg-cover border-2 border-primary" style={{ backgroundImage: 'url("https://i.pravatar.cc/150?u=joao")' }}></div>
+                {userProfile?.avatar_url ? (
+                  <div className="size-12 rounded-2xl bg-center bg-cover border-2 border-primary" style={{ backgroundImage: `url(${userProfile.avatar_url})` }}></div>
+                ) : (
+                  <div className="size-12 rounded-2xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-black text-slate-500 dark:text-slate-400 border-2 border-primary">
+                    {userProfile?.initials || '??'}
+                  </div>
+                )}
                 <div>
-                  <p className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-sm">João Silva</p>
-                  <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Administrador</p>
+                  <p className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-sm line-clamp-1">{userProfile?.full_name || 'Usuário'}</p>
+                  <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{userProfile?.role_name}</p>
                 </div>
               </div>
 

@@ -1,8 +1,10 @@
 'use client';
 
 import { Header } from '@/components/Header';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getSelectedResidenceObj } from '../dashboard/actions';
+import { createClient } from '@/utils/supabase/client';
 
 interface Bill {
   id: string;
@@ -15,11 +17,31 @@ interface Bill {
 }
 
 export default function Financeiro() {
-  const [bills, setBills] = useState<Bill[]>([
-    { id: '1', category: 'Energia Elétrica', description: 'Enel - Ref. Out/23', amount: 245.90, dueDate: '2023-10-25', status: 'Pendente', icon: 'electric_bolt' },
-    { id: '2', category: 'Internet Fibra', description: 'Vivo - Ref. Out/23', amount: 120.00, dueDate: '2023-10-10', status: 'Pago', icon: 'wifi' },
-    { id: '3', category: 'Água e Esgoto', description: 'Sabesp - Ref. Set/23', amount: 150.00, dueDate: '2023-09-15', status: 'Atrasado', icon: 'water_drop' },
-  ]);
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [residence, setResidence] = useState<any>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    getSelectedResidenceObj().then(res => {
+      setResidence(res);
+      if (res?.id) fetchBills(res.id);
+    });
+  }, []);
+
+  const fetchBills = async (rId: string) => {
+    const { data } = await supabase.from('financial_transactions').select('*').eq('residence_id', rId);
+    if (data) {
+      setBills(data.map((d: any) => ({
+        id: d.id,
+        category: d.category,
+        description: d.description,
+        amount: Number(d.amount),
+        dueDate: d.due_date,
+        status: d.status,
+        icon: d.icon
+      })));
+    }
+  };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
@@ -42,34 +64,63 @@ export default function Financeiro() {
     return { total, paid, overdue, overdueCount, percentPaid };
   }, [bills]);
 
-  const handleTogglePaid = (id: string) => {
-    setBills(bills.map(b => {
-      if (b.id === id) {
-        const newStatus = b.status === 'Pago' ? 'Pendente' : 'Pago';
-        return { ...b, status: newStatus as any };
-      }
-      return b;
-    }));
-  };
+  const handleTogglePaid = async (id: string) => {
+    const bill = bills.find(b => b.id === id);
+    if (!bill) return;
 
-  const handleDelete = (id: string) => {
-    if (confirm('Deseja excluir esta conta?')) {
-      setBills(bills.filter(b => b.id !== id));
+    const newStatus = bill.status === 'Pago' ? 'Pendente' : 'Pago';
+    const { error } = await supabase.from('financial_transactions').update({ status: newStatus }).eq('id', id);
+    if (!error) {
+      setBills(bills.map(b => b.id === id ? { ...b, status: newStatus as any } : b));
     }
   };
 
-  const handleSave = () => {
-    if (!newBill.category || newBill.amount <= 0) return;
+  const handleDelete = async (id: string) => {
+    if (confirm('Deseja excluir esta conta?')) {
+      const { error } = await supabase.from('financial_transactions').delete().eq('id', id);
+      if (!error) {
+        setBills(bills.filter(b => b.id !== id));
+      }
+    }
+  };
+
+  const handleSave = async () => {
+    if (!newBill.category || newBill.amount <= 0 || !residence?.id) return;
 
     if (editingBill) {
-      setBills(bills.map(b => b.id === editingBill.id ? { ...editingBill, ...newBill } : b));
+      const { error } = await supabase.from('financial_transactions').update({
+        category: newBill.category,
+        description: newBill.description,
+        amount: newBill.amount,
+        due_date: newBill.dueDate,
+        icon: newBill.icon
+      }).eq('id', editingBill.id);
+
+      if (!error) {
+        setBills(bills.map(b => b.id === editingBill.id ? { ...editingBill, ...newBill } : b));
+      }
     } else {
-      const billToAdd: Bill = {
-        ...newBill,
-        id: Math.random().toString(),
-        status: 'Pendente'
-      };
-      setBills([...bills, billToAdd]);
+      const { data, error } = await supabase.from('financial_transactions').insert([{
+        residence_id: residence.id,
+        category: newBill.category,
+        description: newBill.description,
+        amount: newBill.amount,
+        due_date: newBill.dueDate,
+        status: 'Pendente',
+        icon: newBill.icon
+      }]).select().single();
+
+      if (!error && data) {
+        setBills([...bills, {
+          id: data.id,
+          category: data.category,
+          description: data.description,
+          amount: Number(data.amount),
+          dueDate: data.due_date,
+          status: data.status as any,
+          icon: data.icon
+        }]);
+      }
     }
 
     setIsModalOpen(false);

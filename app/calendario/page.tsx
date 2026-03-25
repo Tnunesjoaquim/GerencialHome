@@ -1,8 +1,10 @@
 'use client';
 
 import { Header } from '@/components/Header';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getSelectedResidenceObj } from '../dashboard/actions';
+import { createClient } from '@/utils/supabase/client';
 
 interface Event {
   id: string;
@@ -18,48 +20,39 @@ interface Event {
 }
 
 export default function Calendario() {
-  const [currentDate, setCurrentDate] = useState(new Date(2023, 9, 5)); // Initial date: Oct 5, 2023
-  const [selectedDate, setSelectedDate] = useState('2023-10-05');
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [events, setEvents] = useState<Event[]>([
-    {
-      id: '1',
-      time: '09:00',
-      period: 'AM',
-      title: 'Reunião de Planejamento',
-      tag: 'Importante',
-      location: 'Sala A',
-      team: 'Time de Produto',
-      color: 'border-primary',
-      tagColor: 'bg-primary/20 text-primary',
-      date: '2023-10-05'
-    },
-    {
-      id: '2',
-      time: '14:30',
-      period: 'PM',
-      title: 'Onboarding Staff',
-      tag: 'RH',
-      location: 'Google Meet',
-      team: 'Novos Talentos',
-      color: 'border-blue-500',
-      tagColor: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600',
-      date: '2023-10-05'
-    },
-    {
-      id: '3',
-      time: '10:00',
-      period: 'AM',
-      title: 'Manutenção Piscina',
-      tag: 'Casa',
-      location: 'Área Leste',
-      team: 'Serviços Gerais',
-      color: 'border-orange-500',
-      tagColor: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600',
-      date: '2023-10-08'
-    }
-  ]);
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [residence, setResidence] = useState<any>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    getSelectedResidenceObj().then(res => {
+      setResidence(res);
+      if (res?.id) fetchEvents(res.id);
+    });
+  }, []);
+
+  const fetchEvents = async (rId: string) => {
+    const { data: eventsData } = await supabase.from('calendar_events').select('*').eq('residence_id', rId);
+    if (!eventsData) return;
+
+    setEvents(eventsData.map((e: any) => ({
+      id: e.id,
+      title: e.title,
+      time: e.time,
+      period: e.period,
+      tag: e.tag,
+      location: e.location || '',
+      team: e.team || '',
+      color: e.color,
+      tagColor: e.tag_color,
+      date: e.date
+    })));
+  };
 
   const [newEvent, setNewEvent] = useState<Omit<Event, 'id' | 'color' | 'tagColor'>>({
     title: '',
@@ -89,23 +82,51 @@ export default function Calendario() {
 
   const filteredEvents = events.filter(e => e.date === selectedDate);
 
-  const handleAddEvent = () => {
-    if (!newEvent.title || !newEvent.date) return;
+  const handleAddEvent = async () => {
+    if (!newEvent.title || !newEvent.date || !residence?.id) return;
 
     if (editingEvent) {
-      setEvents(events.map(e => e.id === editingEvent.id ? { ...editingEvent, ...newEvent } : e));
+      const { error } = await supabase.from('calendar_events').update({
+        title: newEvent.title,
+        time: newEvent.time,
+        period: newEvent.period,
+        tag: newEvent.tag,
+        location: newEvent.location,
+        team: newEvent.team,
+        date: newEvent.date
+      }).eq('id', editingEvent.id);
+
+      if (!error) {
+        setEvents(events.map(e => e.id === editingEvent.id ? { ...editingEvent, ...newEvent } : e));
+      }
       setEditingEvent(null);
     } else {
       const colors = ['border-primary', 'border-blue-500', 'border-orange-500', 'border-purple-500'];
       const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      const defaultTagColor = 'bg-slate-100 dark:bg-slate-800 text-slate-500';
 
-      const eventToAdd: Event = {
-        ...newEvent,
-        id: Math.random().toString(),
+      const { data, error } = await supabase.from('calendar_events').insert([{
+        residence_id: residence.id,
+        title: newEvent.title,
+        time: newEvent.time,
+        period: newEvent.period,
+        tag: newEvent.tag,
+        location: newEvent.location,
+        team: newEvent.team,
         color: randomColor,
-        tagColor: 'bg-slate-100 dark:bg-slate-800 text-slate-500',
-      };
-      setEvents([...events, eventToAdd]);
+        tag_color: defaultTagColor,
+        date: newEvent.date
+      }]).select().single();
+
+      if (!error && data) {
+        const eventToAdd: Event = {
+          ...newEvent,
+          id: data.id,
+          color: randomColor,
+          tagColor: defaultTagColor,
+        };
+        setEvents([...events, eventToAdd]);
+      }
     }
 
     setIsModalOpen(false);
@@ -265,7 +286,7 @@ export default function Calendario() {
                         <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{ev.time}</span>
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{ev.period}</span>
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 pr-20 md:pr-28">
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase group-hover:text-primary transition-colors">{ev.title}</h4>
                           <span className={`text-[10px] font-black px-4 py-1 rounded-full uppercase tracking-widest ${ev.tagColor}`}>{ev.tag}</span>
@@ -281,21 +302,20 @@ export default function Calendario() {
                           </div>
                         </div>
                       </div>
-                      <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 flex flex-col gap-2">
+                      <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col gap-2">
                         <button
                           onClick={(e) => { e.stopPropagation(); openEditEvent(ev); }}
-                          className="size-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center hover:bg-primary/20 hover:text-primary transition-all shadow-lg"
+                          className="size-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center hover:bg-primary/20 hover:text-primary transition-all shadow-lg relative z-20 pointer-events-auto"
                         >
                           <span className="material-symbols-outlined font-black text-sm">edit</span>
                         </button>
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (confirm('Deseja excluir este compromisso?')) {
-                              setEvents(events.filter(e => e.id !== ev.id));
-                            }
+                            setEventToDelete(ev);
                           }}
-                          className="size-10 rounded-full bg-red-50 dark:bg-red-950/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-lg"
+                          className="size-10 rounded-full bg-red-50 dark:bg-red-950/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-lg relative z-20 pointer-events-auto"
                         >
                           <span className="material-symbols-outlined font-black text-sm">delete</span>
                         </button>
@@ -392,6 +412,59 @@ export default function Calendario() {
                 >
                   Calcelar
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* MODAL: Confirmar Exclusão */}
+      <AnimatePresence>
+        {eventToDelete && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => setEventToDelete(null)}
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-[32px] p-8 shadow-2xl overflow-hidden"
+            >
+              <div className="flex flex-col items-center text-center gap-4">
+                <div className="size-16 rounded-full bg-red-50 dark:bg-red-950/20 text-red-500 flex items-center justify-center mb-2">
+                  <span className="material-symbols-outlined text-4xl">warning</span>
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Excluir Evento</h3>
+                <p className="text-slate-500 dark:text-slate-400 font-bold mb-4">
+                  Tem certeza que deseja excluir o evento <span className="text-slate-900 dark:text-white">"{eventToDelete.title}"</span>? Esta ação não pode ser desfeita.
+                </p>
+                <div className="flex gap-4 w-full">
+                  <button
+                    onClick={() => setEventToDelete(null)}
+                    className="flex-1 h-12 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black uppercase tracking-widest text-xs rounded-xl hover:brightness-95 transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const id = eventToDelete.id;
+                      setEventToDelete(null);
+                      const { error } = await supabase.from('calendar_events').delete().eq('id', id);
+                      if (error) {
+                        alert('Erro ao excluir o evento: ' + error.message);
+                      } else {
+                        setEvents(prev => prev.filter(item => item.id !== id));
+                      }
+                    }}
+                    className="flex-1 h-12 bg-red-500 text-white font-black uppercase tracking-widest text-xs rounded-xl hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
+                  >
+                    Excluir
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
