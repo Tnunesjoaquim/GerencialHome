@@ -5,6 +5,9 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSelectedResidenceObj } from '../dashboard/actions';
 import { createClient } from '@/utils/supabase/client';
+import { CategoryModal } from '@/components/modals/CategoryModal';
+import { ItemModal, ItemData } from '@/components/modals/ItemModal';
+import { DeleteConfirmModal } from '@/components/modals/DeleteConfirmModal';
 
 interface Item {
   id: string;
@@ -81,19 +84,19 @@ export default function Estoque() {
     name: '', unit: 'Unidade', minStock: 0, currentStock: 0, expiry: '', responsible: '', obs: ''
   });
 
-  const handleAddCategory = async () => {
-    if (!newCatName || !residence?.id) return;
+  const handleAddCategory = async (catName: string) => {
+    if (!catName || !residence?.id) return;
 
     if (editingCategory) {
-      const { error } = await supabase.from('inventory_categories').update({ name: newCatName }).eq('id', editingCategory.id);
+      const { error } = await supabase.from('inventory_categories').update({ name: catName }).eq('id', editingCategory.id);
       if (!error) {
-        setCategories(categories.map(cat => cat.id === editingCategory.id ? { ...cat, name: newCatName } : cat));
+        setCategories(categories.map(cat => cat.id === editingCategory.id ? { ...cat, name: catName } : cat));
       }
       setEditingCategory(null);
     } else {
       const { data, error } = await supabase.from('inventory_categories').insert([{
         residence_id: residence.id,
-        name: newCatName,
+        name: catName,
         icon: 'inventory_2'
       }]).select().single();
 
@@ -119,22 +122,22 @@ export default function Estoque() {
     }
   };
 
-  const handleAddItem = async () => {
-    if (!activeItemModal.categoryId || !newItemData.name) return;
+  const handleAddItem = async (itemData: ItemData) => {
+    if (!activeItemModal.categoryId || !itemData.name) return;
 
     if (editingItem) {
       const { error } = await supabase.from('inventory_items').update({
-        name: newItemData.name,
-        unit: newItemData.unit,
-        min_stock: newItemData.minStock,
-        current_stock: newItemData.currentStock,
-        expiry: newItemData.expiry,
-        responsible: newItemData.responsible,
-        obs: newItemData.obs
+        name: itemData.name,
+        unit: itemData.unit,
+        min_stock: itemData.minStock,
+        current_stock: itemData.currentStock,
+        expiry: itemData.expiry,
+        responsible: itemData.responsible,
+        obs: itemData.obs
       }).eq('id', editingItem.item.id);
 
       if (!error) {
-        const updatedItem: Item = { ...newItemData, id: editingItem.item.id };
+        const updatedItem: Item = { ...itemData, id: editingItem.item.id };
         setCategories(categories.map(cat =>
           cat.id === activeItemModal.categoryId
             ? { ...cat, items: cat.items.map(i => i.id === editingItem.item.id ? updatedItem : i) }
@@ -145,17 +148,17 @@ export default function Estoque() {
     } else {
       const { data, error } = await supabase.from('inventory_items').insert([{
         category_id: activeItemModal.categoryId,
-        name: newItemData.name,
-        unit: newItemData.unit,
-        min_stock: newItemData.minStock,
-        current_stock: newItemData.currentStock,
-        expiry: newItemData.expiry,
-        responsible: userName,
-        obs: newItemData.obs
+        name: itemData.name,
+        unit: itemData.unit,
+        min_stock: itemData.minStock,
+        current_stock: itemData.currentStock,
+        expiry: itemData.expiry,
+        responsible: itemData.responsible,
+        obs: itemData.obs
       }]).select().single();
 
       if (!error && data) {
-        const newItem: Item = { ...newItemData, id: data.id, responsible: userName };
+        const newItem: Item = { ...itemData, id: data.id };
         setCategories(categories.map(cat =>
           cat.id === activeItemModal.categoryId
             ? { ...cat, items: [...cat.items, newItem] }
@@ -163,7 +166,6 @@ export default function Estoque() {
         ));
       }
     }
-    setNewItemData({ name: '', unit: 'Unidade', minStock: 0, currentStock: 0, expiry: '', responsible: '', obs: '' });
     setActiveItemModal({ categoryId: null });
   };
 
@@ -449,120 +451,49 @@ export default function Estoque() {
         </div>
       </main>
 
-      {/* MODAL: Nova Categoria */}
+            {/* MODAL: Nova Categoria */}
       <AnimatePresence>
         {activeCategoryModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveCategoryModal(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-2xl">
-              <h2 className="text-2xl font-black mb-6 dark:text-white uppercase tracking-tight">{editingCategory ? 'Renomear Categoria' : 'Criar Nova Categoria'}</h2>
-              <div className="flex flex-col gap-4">
-                <input
-                  autoFocus
-                  className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary outline-none dark:text-white"
-                  placeholder="Nome da categoria (ex: Limpeza)"
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                />
-                <div className="flex gap-3 mt-4">
-                  <button onClick={() => setActiveCategoryModal(false)} className="flex-1 py-4 font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase text-xs">Cancelar</button>
-                  <button onClick={handleAddCategory} className="flex-1 py-4 bg-primary text-slate-900 rounded-xl font-bold shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all text-xs uppercase">Confirmar</button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+          <CategoryModal 
+            initialName={newCatName} 
+            onClose={() => setActiveCategoryModal(false)}
+            onSave={(name) => {
+               setNewCatName(name);
+               handleAddCategory(name);
+            }} 
+          />
         )}
       </AnimatePresence>
 
       {/* MODAL: Novo Item */}
       <AnimatePresence>
         {activeItemModal.categoryId && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setActiveItemModal({ categoryId: null })} className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" />
-            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
-              <h2 className="text-2xl font-black mb-6 dark:text-white uppercase tracking-tight">{editingItem ? 'Editar Item' : 'Adicionar Item'}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nome do Produto</label>
-                  <input className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={newItemData.name} onChange={(e) => setNewItemData({ ...newItemData, name: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Unidade</label>
-                  <select
-                    className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white appearance-none cursor-pointer font-bold text-sm"
-                    value={newItemData.unit}
-                    onChange={(e) => setNewItemData({ ...newItemData, unit: e.target.value })}
-                  >
-                    <option value="Unidade">Unidade</option>
-                    <option value="KG">KG</option>
-                    <option value="Gramas">Gramas</option>
-                    <option value="Peso">Peso</option>
-                    <option value="Litros">Litros</option>
-                    <option value="ML">ML</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Estoque Min.</label>
-                  <input type="number" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={newItemData.minStock} onChange={(e) => setNewItemData({ ...newItemData, minStock: Number(e.target.value) })} />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Estoque Atual</label>
-                  <input type="number" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={newItemData.currentStock} onChange={(e) => setNewItemData({ ...newItemData, currentStock: Number(e.target.value) })} />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Vencimento</label>
-                  <input type="date" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={parseExpiryForInput(newItemData.expiry)} onChange={(e) => setNewItemData({ ...newItemData, expiry: e.target.value })} />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Responsável</label>
-                  <input type="text" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Nome do Responsável" value={newItemData.responsible} onChange={(e) => setNewItemData({ ...newItemData, responsible: e.target.value })} />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Observações</label>
-                  <input className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Opcional..." value={newItemData.obs} onChange={(e) => setNewItemData({ ...newItemData, obs: e.target.value })} />
-                </div>
-              </div>
-              <div className="flex gap-3 mt-8">
-                <button onClick={() => setActiveItemModal({ categoryId: null })} className="flex-1 py-4 font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase text-xs">Descartar</button>
-                <button onClick={handleAddItem} className="flex-1 py-4 bg-primary text-slate-900 rounded-xl font-bold shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all text-xs uppercase">Salvar Produto</button>
-              </div>
-            </motion.div>
-          </div>
+          <ItemModal
+            isEditing={!!editingItem}
+            initialData={editingItem ? {
+              name: editingItem.item.name,
+              unit: editingItem.item.unit,
+              minStock: editingItem.item.minStock,
+              currentStock: editingItem.item.currentStock,
+              expiry: editingItem.item.expiry,
+              responsible: editingItem.item.responsible,
+              obs: editingItem.item.obs
+            } : undefined}
+            defaultResponsible={userName}
+            onClose={() => setActiveItemModal({ categoryId: null })}
+            onSave={(data) => handleAddItem(data)}
+          />
         )}
       </AnimatePresence>
 
       {/* MODAL: Excluir Item */}
       <AnimatePresence>
         {deleteConfirmModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDeleteConfirmModal(null)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-2xl text-center">
-              
-              <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
-                <span className="material-symbols-outlined text-3xl text-red-500">warning</span>
-              </div>
-              
-              <h2 className="text-2xl font-black mb-2 dark:text-white uppercase tracking-tight">Excluir Produto</h2>
-              <p className="text-slate-500 dark:text-slate-400 mb-8">
-                Tem certeza que deseja excluir o item <strong className="text-slate-800 dark:text-slate-200">{deleteConfirmModal.itemName}</strong> do estoque? Esta ação não pode ser desfeita.
-              </p>
-              
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setDeleteConfirmModal(null)} 
-                  className="flex-1 py-4 font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors uppercase text-xs"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={handleDeleteItem} 
-                  className="flex-1 py-4 bg-red-500 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 hover:bg-red-600 active:scale-95 transition-all text-xs uppercase"
-                >
-                  Sim, Excluir
-                </button>
-              </div>
-            </motion.div>
-          </div>
+          <DeleteConfirmModal
+            itemName={deleteConfirmModal.itemName}
+            onClose={() => setDeleteConfirmModal(null)}
+            onConfirm={handleDeleteItem}
+          />
         )}
       </AnimatePresence>
     </div>
