@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/hooks/useTheme';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/utils/supabase/client';
+import { logout } from '@/app/login/actions';
 
 export function Header({ activeTab }: { activeTab: string }) {
   const { theme, toggleTheme } = useTheme();
@@ -16,10 +17,35 @@ export function Header({ activeTab }: { activeTab: string }) {
   const [userProfile, setUserProfile] = useState<{ full_name: string; avatar_url: string | null; initials: string; role_name: string } | null>(null);
   const supabase = createClient();
 
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   useEffect(() => {
     setMounted(true);
     fetchUserProfile();
   }, []);
+
+  useEffect(() => {
+    const updateLastSeen = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('user_profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id);
+      }
+    };
+    if (mounted) {
+      updateLastSeen();
+    }
+  }, [pathname, mounted, supabase]);
 
   const fetchUserProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -124,15 +150,68 @@ export function Header({ activeTab }: { activeTab: string }) {
             </span>
           </button>
 
-          {/* Profile & Notifications (Desktop) */}
-          <div className="hidden sm:flex items-center gap-3 pl-2 border-l border-slate-200 dark:border-slate-700 ml-2">
-            {userProfile?.avatar_url ? (
-              <div className="size-10 md:size-11 rounded-2xl bg-center bg-cover border-2 border-primary/20 hover:border-primary transition-colors cursor-pointer" style={{ backgroundImage: `url(${userProfile.avatar_url})` }}></div>
-            ) : (
-              <div className="size-10 md:size-11 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-xs text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-primary transition-colors cursor-pointer">
-                {userProfile?.initials || '??'}
-              </div>
-            )}
+          {/* Profile Menu Dropdown (Desktop) */}
+          <div className="relative" ref={profileMenuRef}>
+            <div 
+              onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              className="hidden sm:flex items-center gap-3 pl-2 border-l border-slate-200 dark:border-slate-700 ml-2 cursor-pointer relative"
+            >
+              {userProfile?.avatar_url ? (
+                <div className="size-10 md:size-11 rounded-2xl bg-center bg-cover border-2 border-primary/20 hover:border-primary transition-colors" style={{ backgroundImage: `url(${userProfile.avatar_url})` }}></div>
+              ) : (
+                <div className="size-10 md:size-11 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-xs text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-primary transition-colors">
+                  {userProfile?.initials || '??'}
+                </div>
+              )}
+            </div>
+
+            <AnimatePresence>
+              {isProfileMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-4 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[200]"
+                >
+                  <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col">
+                    <span className="font-black text-slate-900 dark:text-white uppercase truncate text-sm">{userProfile?.full_name || 'Usuário'}</span>
+                    <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">{userProfile?.role_name}</span>
+                  </div>
+                  
+                  <div className="flex flex-col p-2">
+                    <Link 
+                      href="/perfil" 
+                      onClick={() => setIsProfileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold transition-colors text-sm"
+                    >
+                      <span className="material-symbols-outlined text-lg">manage_accounts</span>
+                      Editar Perfil
+                    </Link>
+                    <Link 
+                      href="/selecionar-residencia" 
+                      onClick={() => setIsProfileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold transition-colors text-sm"
+                    >
+                      <span className="material-symbols-outlined text-lg">home_work</span>
+                      Trocar Residência
+                    </Link>
+                  </div>
+                  
+                  <div className="border-t border-slate-100 dark:border-slate-800 p-2 flex flex-col pt-2">
+                    <form action={logout}>
+                      <button 
+                        type="submit"
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 font-black transition-colors text-sm uppercase tracking-widest"
+                      >
+                        <span className="material-symbols-outlined text-lg">logout</span>
+                        Sair da Conta
+                      </button>
+                    </form>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Mobile Menu Button */}

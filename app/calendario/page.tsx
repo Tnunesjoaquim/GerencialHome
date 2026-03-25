@@ -410,7 +410,7 @@ export default function Calendario() {
                   onClick={() => setIsModalOpen(false)}
                   className="w-full h-14 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-black uppercase tracking-widest text-xs transition-colors"
                 >
-                  Calcelar
+                  Cancelar
                 </button>
               </div>
             </motion.div>

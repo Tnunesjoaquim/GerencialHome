@@ -26,6 +26,7 @@ interface Category {
 
 export default function Estoque() {
   const [userRole, setUserRole] = useState<'ADMIN' | 'STAFF'>('STAFF');
+  const [userName, setUserName] = useState<string>('Equipe');
   const [categories, setCategories] = useState<Category[]>([]);
   const [residence, setResidence] = useState<any>(null);
   const supabase = createClient();
@@ -38,8 +39,9 @@ export default function Estoque() {
 
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
-        supabase.from('user_profiles').select('role').eq('id', user.id).single().then(({ data }) => {
+        supabase.from('user_profiles').select('role, full_name').eq('id', user.id).single().then(({ data }) => {
           if (data?.role) setUserRole(data.role as 'ADMIN' | 'STAFF');
+          if (data?.full_name) setUserName(data.full_name);
         });
       }
     });
@@ -72,10 +74,11 @@ export default function Estoque() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [activeItemModal, setActiveItemModal] = useState<{ categoryId: string | null }>({ categoryId: null });
   const [editingItem, setEditingItem] = useState<{ categoryId: string, item: Item } | null>(null);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ categoryId: string; itemId: string; itemName: string } | null>(null);
 
   const [newCatName, setNewCatName] = useState('');
   const [newItemData, setNewItemData] = useState<Omit<Item, 'id'>>({
-    name: '', unit: 'Unidade', minStock: 0, currentStock: 0, expiry: '', responsible: 'João Silva', obs: ''
+    name: '', unit: 'Unidade', minStock: 0, currentStock: 0, expiry: '', responsible: '', obs: ''
   });
 
   const handleAddCategory = async () => {
@@ -147,12 +150,12 @@ export default function Estoque() {
         min_stock: newItemData.minStock,
         current_stock: newItemData.currentStock,
         expiry: newItemData.expiry,
-        responsible: newItemData.responsible,
+        responsible: userName,
         obs: newItemData.obs
       }]).select().single();
 
       if (!error && data) {
-        const newItem: Item = { ...newItemData, id: data.id };
+        const newItem: Item = { ...newItemData, id: data.id, responsible: userName };
         setCategories(categories.map(cat =>
           cat.id === activeItemModal.categoryId
             ? { ...cat, items: [...cat.items, newItem] }
@@ -160,7 +163,7 @@ export default function Estoque() {
         ));
       }
     }
-    setNewItemData({ name: '', unit: 'Unidade', minStock: 0, currentStock: 0, expiry: '', responsible: 'João Silva', obs: '' });
+    setNewItemData({ name: '', unit: 'Unidade', minStock: 0, currentStock: 0, expiry: '', responsible: '', obs: '' });
     setActiveItemModal({ categoryId: null });
   };
 
@@ -178,16 +181,57 @@ export default function Estoque() {
     setActiveItemModal({ categoryId });
   };
 
-  const handleDeleteItem = async (catId: string, itemId: string) => {
-    if (userRole !== 'ADMIN') return alert('Apenas administradores podem excluir itens.');
-    if (confirm('Deseja excluir este item?')) {
-      const { error } = await supabase.from('inventory_items').delete().eq('id', itemId);
-      if (!error) {
-        setCategories(categories.map(cat =>
-          cat.id === catId ? { ...cat, items: cat.items.filter(i => i.id !== itemId) } : cat
-        ));
-      }
+  const handleDeleteItem = async () => {
+    if (!deleteConfirmModal) return;
+    const { categoryId: catId, itemId } = deleteConfirmModal;
+    
+    const { data: deletedRows, error } = await supabase.from('inventory_items').delete().eq('id', itemId).select();
+    
+    if (error) {
+      console.error('Erro na exclusão:', error);
+      alert('Erro ao excluir item: ' + error.message);
+    } else if (deletedRows && deletedRows.length === 0) {
+      alert('Não foi possível excluir. O item pode já ter sido excluído ou você não tem permissão.');
+    } else {
+      setCategories(categories.map(cat =>
+        cat.id === catId ? { ...cat, items: cat.items.filter(i => i.id !== itemId) } : cat
+      ));
     }
+    setDeleteConfirmModal(null);
+  };
+
+  const formatExpiry = (dateStr: string) => {
+    if (!dateStr) return '--';
+    if (dateStr.includes('/')) return dateStr;
+    const parts = dateStr.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return dateStr;
+  };
+
+  const parseExpiryForInput = (dateStr: string) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return dateStr;
+  };
+
+  const isExpired = (dateStr: string) => {
+    if (!dateStr) return false;
+    let y, m, d;
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) [d, m, y] = parts;
+    } else {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) [y, m, d] = parts;
+    }
+    if (!y || !m || !d) return false;
+    const expiryDate = new Date(Number(y), Number(m) - 1, Number(d));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return expiryDate < today;
   };
 
   return (
@@ -275,8 +319,65 @@ export default function Estoque() {
                 </div>
               </div>
 
-              {/* Responsive Table Container */}
-              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm scrollbar-thin">
+              {/* Mobile Cards View */}
+              <div className="md:hidden flex flex-col gap-4 mt-4">
+                {category.items.length === 0 ? (
+                  <div className="py-10 text-center text-slate-400 font-bold uppercase tracking-widest italic border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
+                    Nenhum item cadastrado nesta categoria.
+                  </div>
+                ) : (
+                  category.items.map((item) => (
+                    <div key={item.id} className="p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col gap-4 transition-all">
+                      <div className="flex justify-between items-start">
+                        <div className="flex flex-col gap-1 pr-4">
+                          <span className="font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{item.name}</span>
+                          {item.obs && <span className="text-[10px] text-slate-400 italic font-medium">{item.obs}</span>}
+                        </div>
+                        <span className={`px-3 py-1.5 rounded-full font-black text-[10px] uppercase tracking-widest flex-shrink-0 ${item.currentStock <= item.minStock
+                          ? 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-900'
+                          : 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400 border border-green-200 dark:border-green-900'
+                          }`}>
+                          Estoque: {item.currentStock} {item.unit}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2 mt-2 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Mínimo</span>
+                          <span className="font-black text-slate-700 dark:text-slate-300">{item.minStock} {item.unit}</span>
+                        </div>
+                        <div className="flex flex-col gap-1 items-end">
+                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Vencimento</span>
+                          <span className={`font-bold text-sm ${isExpired(item.expiry) ? 'text-red-500 animate-pulse' : 'text-slate-600 dark:text-slate-400'}`}>{formatExpiry(item.expiry)}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between items-center mt-2">
+                        <div className="flex items-center gap-2">
+                          <div className="size-8 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-black text-primary ring-2 ring-white dark:ring-slate-900 shadow-sm">
+                            {item.responsible.substring(0, 2).toUpperCase()}
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase truncate max-w-[100px]">{item.responsible}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => openEditItem(category.id, item)} className="size-10 rounded-xl bg-white dark:bg-slate-800 text-slate-400 hover:text-primary transition-colors flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <span className="material-symbols-outlined text-lg">edit</span>
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmModal({ categoryId: category.id, itemId: item.id, itemName: item.name })}
+                            className="size-10 rounded-xl bg-red-50 dark:bg-red-950/20 text-red-400 hover:text-red-600 transition-colors flex items-center justify-center border border-red-100 dark:border-red-900/30 shadow-sm"
+                          >
+                            <span className="material-symbols-outlined text-lg">delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Desktop Responsive Table Container */}
+              <div className="hidden md:block overflow-x-auto rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl scrollbar-thin mt-6">
                 <table className="w-full text-left text-sm border-collapse min-w-[800px]">
                   <thead>
                     <tr className="bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-widest">
@@ -313,7 +414,9 @@ export default function Estoque() {
                               {item.currentStock}
                             </span>
                           </td>
-                          <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-400">{item.expiry}</td>
+                          <td className={`px-6 py-4 font-medium ${isExpired(item.expiry) ? 'text-red-500 font-bold animate-pulse' : 'text-slate-600 dark:text-slate-400'}`}>
+                            {formatExpiry(item.expiry)}
+                          </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
                               <div className="size-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary ring-2 ring-white dark:ring-slate-800">
@@ -324,19 +427,15 @@ export default function Estoque() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {userRole === 'ADMIN' && (
-                                <>
-                                  <button onClick={() => openEditItem(category.id, item)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary transition-colors flex items-center justify-center shadow-sm">
-                                    <span className="material-symbols-outlined text-lg">edit</span>
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteItem(category.id, item.id)}
-                                    className="size-8 rounded-lg bg-red-50 dark:bg-red-950/20 text-red-400 hover:text-red-600 transition-colors flex items-center justify-center shadow-sm"
-                                  >
-                                    <span className="material-symbols-outlined text-lg">delete</span>
-                                  </button>
-                                </>
-                              )}
+                                <button onClick={() => openEditItem(category.id, item)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary transition-colors flex items-center justify-center shadow-sm">
+                                  <span className="material-symbols-outlined text-lg">edit</span>
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirmModal({ categoryId: category.id, itemId: item.id, itemName: item.name })}
+                                  className="size-8 rounded-lg bg-red-50 dark:bg-red-950/20 text-red-400 hover:text-red-600 transition-colors flex items-center justify-center shadow-sm"
+                                >
+                                  <span className="material-symbols-outlined text-lg">delete</span>
+                                </button>
                             </div>
                           </td>
                         </tr>
@@ -412,7 +511,11 @@ export default function Estoque() {
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Vencimento</label>
-                  <input type="text" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="DD/MM/AAAA" value={newItemData.expiry} onChange={(e) => setNewItemData({ ...newItemData, expiry: e.target.value })} />
+                  <input type="date" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={parseExpiryForInput(newItemData.expiry)} onChange={(e) => setNewItemData({ ...newItemData, expiry: e.target.value })} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Responsável</label>
+                  <input type="text" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Nome do Responsável" value={newItemData.responsible} onChange={(e) => setNewItemData({ ...newItemData, responsible: e.target.value })} />
                 </div>
                 <div className="md:col-span-2">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Observações</label>
@@ -422,6 +525,41 @@ export default function Estoque() {
               <div className="flex gap-3 mt-8">
                 <button onClick={() => setActiveItemModal({ categoryId: null })} className="flex-1 py-4 font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase text-xs">Descartar</button>
                 <button onClick={handleAddItem} className="flex-1 py-4 bg-primary text-slate-900 rounded-xl font-bold shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all text-xs uppercase">Salvar Produto</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL: Excluir Item */}
+      <AnimatePresence>
+        {deleteConfirmModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDeleteConfirmModal(null)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-2xl text-center">
+              
+              <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-3xl text-red-500">warning</span>
+              </div>
+              
+              <h2 className="text-2xl font-black mb-2 dark:text-white uppercase tracking-tight">Excluir Produto</h2>
+              <p className="text-slate-500 dark:text-slate-400 mb-8">
+                Tem certeza que deseja excluir o item <strong className="text-slate-800 dark:text-slate-200">{deleteConfirmModal.itemName}</strong> do estoque? Esta ação não pode ser desfeita.
+              </p>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setDeleteConfirmModal(null)} 
+                  className="flex-1 py-4 font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors uppercase text-xs"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleDeleteItem} 
+                  className="flex-1 py-4 bg-red-500 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 hover:bg-red-600 active:scale-95 transition-all text-xs uppercase"
+                >
+                  Sim, Excluir
+                </button>
               </div>
             </motion.div>
           </div>

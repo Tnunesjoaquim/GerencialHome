@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
@@ -94,5 +95,21 @@ export async function deleteResidence(residenceId: string, photoUrl: string | nu
             const filePath = `${user.id}/${fileName}`
             await supabase.storage.from('photos').remove([filePath])
         }
+    }
+
+    if (!error) {
+        const cookieStore = await cookies()
+        const currentCookie = cookieStore.get('selected_residence')
+        if (currentCookie) {
+            try {
+                const currentData = JSON.parse(currentCookie.value)
+                if (currentData.id === residenceId) {
+                    cookieStore.delete('selected_residence')
+                }
+            } catch (e) {}
+        }
+        revalidatePath('/selecionar-residencia')
+    } else {
+        console.error('Failed to delete residence:', error)
     }
 }

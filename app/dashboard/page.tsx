@@ -13,6 +13,10 @@ export default function Dashboard() {
   const [financeStats, setFinanceStats] = useState({ total: 0, paid: 0, overdue: 0, overdueCount: 0, percentPaid: 0 });
   const [inventoryStats, setInventoryStats] = useState({ totalItems: 0, lowStock: 0, expiringSoon: 0 });
   const [nextEvent, setNextEvent] = useState<any>(null);
+  const [overdueBills, setOverdueBills] = useState<any[]>([]);
+  const [lowStockItems, setLowStockItems] = useState<any[]>([]);
+  const [expiredItems, setExpiredItems] = useState<any[]>([]);
+  const [teamStats, setTeamStats] = useState({ total: 0, online: 1 });
   const supabase = createClient();
 
   useEffect(() => {
@@ -24,6 +28,7 @@ export default function Dashboard() {
           fetchFinance(res.id);
           fetchInventory(res.id);
           fetchCalendar(res.id);
+          fetchTeam(res.id);
         }
       } else {
         setResidence('Casa Principal');
@@ -43,12 +48,24 @@ export default function Dashboard() {
   const fetchFinance = async (rId: string) => {
     const { data, error } = await supabase.from('financial_transactions').select('*').eq('residence_id', rId);
     if (!error && data) {
-      const total = data.reduce((acc, b) => acc + Number(b.amount), 0);
-      const paid = data.filter(b => b.status === 'Pago').reduce((acc, b) => acc + Number(b.amount), 0);
-      const overdue = data.filter(b => b.status === 'Atrasado').reduce((acc, b) => acc + Number(b.amount), 0);
-      const overdueCount = data.filter(b => b.status === 'Atrasado').length;
+      const today = new Date().toISOString().split('T')[0];
+      
+      const processedData = data.map(b => {
+        // Se a conta estiver pendente e a data limite já passou, trate como Atrasado na interface
+        if (b.status === 'Pendente' && b.due_date < today) {
+          return { ...b, status: 'Atrasado' };
+        }
+        return b;
+      });
+
+      const total = processedData.reduce((acc, b) => acc + Number(b.amount), 0);
+      const paid = processedData.filter(b => b.status === 'Pago').reduce((acc, b) => acc + Number(b.amount), 0);
+      const overdue = processedData.filter(b => b.status === 'Atrasado').reduce((acc, b) => acc + Number(b.amount), 0);
+      const overdueCount = processedData.filter(b => b.status === 'Atrasado').length;
       const percentPaid = total > 0 ? Math.round((paid / total) * 100) : 0;
+      
       setFinanceStats({ total, paid, overdue, overdueCount, percentPaid });
+      setOverdueBills(processedData.filter(b => b.status === 'Atrasado'));
     }
   };
 
@@ -60,18 +77,34 @@ export default function Dashboard() {
       if (items) {
         const totalItems = items.length;
         const lowStock = items.filter(i => Number(i.current_stock) <= Number(i.min_stock)).length;
-        // Basic check for expiry (if there is a date string in the future but close, or anything really)
-        // For simplicity, we just count if there's any expiry string filled or if you want to parse date
-        const expiringSoon = items.filter(i => {
-          if (!i.expiry) return false;
-          // If it's a date string, we'll just consider them non-empty for now
-          return true;
-        }).length;
+        const isExpired = (dateStr: string) => {
+          if (!dateStr) return false;
+          let y, m, d;
+          if (dateStr.includes('/')) {
+             const parts = dateStr.split('/');
+             if (parts.length === 3) [d, m, y] = parts;
+          } else {
+             const parts = dateStr.split('-');
+             if (parts.length === 3) [y, m, d] = parts;
+          }
+          if (!y || !m || !d) return false;
+          const expiryDate = new Date(Number(y), Number(m) - 1, Number(d));
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return expiryDate < today;
+        };
+
+        const expiringItemsList = items.filter(i => isExpired(i.expiry));
+        const expiringSoon = expiringItemsList.length;
 
         setInventoryStats({ totalItems, lowStock, expiringSoon });
+        setLowStockItems(items.filter(i => Number(i.current_stock) <= Number(i.min_stock)));
+        setExpiredItems(expiringItemsList);
       }
     } else {
       setInventoryStats({ totalItems: 0, lowStock: 0, expiringSoon: 0 });
+      setLowStockItems([]);
+      setExpiredItems([]);
     }
   };
 
@@ -92,6 +125,36 @@ export default function Dashboard() {
     } else {
       setNextEvent(null);
     }
+  };
+
+  const fetchTeam = async (rId: string) => {
+    const { data: resData } = await supabase.from('residences').select('owner_id').eq('id', rId).single();
+    if (!resData) return;
+    
+    const { data: members } = await supabase.from('residence_members').select('user_id').eq('residence_id', rId);
+    
+    const userIds = [resData.owner_id];
+    if (members) {
+      members.forEach((m: any) => userIds.push(m.user_id));
+    }
+    
+    const uniqueIds = Array.from(new Set(userIds));
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    
+    const { data: profiles } = await supabase.from('user_profiles').select('id, last_seen').in('id', uniqueIds);
+    
+    let total = uniqueIds.length;
+    let online = 0;
+    
+    if (profiles) {
+      profiles.forEach((p: any) => {
+        if (p.last_seen && p.last_seen > fiveMinutesAgo) {
+          online++;
+        }
+      });
+    }
+    
+    setTeamStats({ total, online: online === 0 ? 1 : online });
   };
 
   const containerVariants = {
@@ -261,8 +324,8 @@ export default function Dashboard() {
               </div>
               <div className="z-10">
                 <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Time Ativo</p>
-                <h3 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mt-1">89 Logados</h3>
-                <p className="text-[10px] text-slate-500 mt-2 font-medium">TOTAL: 124 USUÁRIOS</p>
+                <h3 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mt-1">{teamStats.online} {teamStats.online === 1 ? 'Logado' : 'Logados'}</h3>
+                <p className="text-[10px] text-slate-500 mt-2 font-medium">TOTAL: {teamStats.total} {teamStats.total === 1 ? 'USUÁRIO' : 'USUÁRIOS'}</p>
                 <div className="flex items-center gap-2 mt-4 text-green-500">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -339,30 +402,50 @@ export default function Dashboard() {
                 <span className="material-symbols-outlined text-red-500">notifications_active</span> Notificações
               </h2>
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xl">
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 bg-red-50 dark:bg-red-950/20">
-                  <span className="material-symbols-outlined text-red-500">error</span>
-                  <div>
-                    <p className="text-sm font-bold text-red-700 dark:text-red-400">Sabesp Vencida!</p>
-                    <p className="text-xs text-red-600 dark:text-red-500/70 line-clamp-1">Venceu em 15/10 (R$ 150,00)</p>
+                {overdueBills.length === 0 && lowStockItems.length === 0 && expiredItems.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <span className="material-symbols-outlined text-4xl text-green-500 mb-2 mt-4">check_circle</span>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Tudo em dia!</p>
+                    <p className="text-xs text-slate-500 mt-1 mb-4">Nenhuma notificação pendente.</p>
                   </div>
-                </div>
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
-                  <span className="material-symbols-outlined text-orange-500">shopping_cart_checkout</span>
-                  <div>
-                    <p className="text-sm font-bold">Estoque Baixo</p>
-                    <p className="text-xs text-slate-500 line-clamp-1">Carne Moída (Patinho) está no fim.</p>
-                  </div>
-                </div>
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary">new_releases</span>
-                  <div>
-                    <p className="text-sm font-bold">Relatório Mensal</p>
-                    <p className="text-xs text-slate-500 line-clamp-1">Consumo de energia caiu 12%.</p>
-                  </div>
-                </div>
-                <button className="w-full py-4 text-xs font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/20">
-                  Limpar notificações
-                </button>
+                ) : (
+                  <>
+                    {overdueBills.map((bill, idx) => (
+                      <div key={`fin-${bill.id || idx}`} className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 bg-red-50 dark:bg-red-950/20">
+                        <span className="material-symbols-outlined text-red-500">error</span>
+                        <div>
+                          <p className="text-sm font-bold text-red-700 dark:text-red-400">{bill.category || 'Conta'} Vencida!</p>
+                          <p className="text-xs text-red-600 dark:text-red-500/70 line-clamp-1">
+                            Venceu em {bill.due_date ? new Date(bill.due_date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Data Indefinida'} (R$ {Number(bill.amount).toLocaleString('pt-BR', {minimumFractionDigits: 2})})
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {lowStockItems.map((item, idx) => (
+                      <div key={`inv-${item.id || idx}`} className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                        <span className="material-symbols-outlined text-orange-500">shopping_cart_checkout</span>
+                        <div>
+                          <p className="text-sm font-bold">Estoque Baixo</p>
+                          <p className="text-xs text-slate-500 line-clamp-1">{item.name} está no fim ({item.current_stock} restante).</p>
+                        </div>
+                      </div>
+                    ))}
+                    {expiredItems.map((item, idx) => (
+                      <div key={`exp-${item.id || idx}`} className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 bg-red-50 dark:bg-red-950/20">
+                        <span className="material-symbols-outlined text-red-500">event_busy</span>
+                        <div>
+                          <p className="text-sm font-bold text-red-700 dark:text-red-400">Produto Vencido!</p>
+                          <p className="text-xs text-red-600 dark:text-red-500/70 line-clamp-1">
+                            {item.name} venceu em {item.expiry.includes('-') ? item.expiry.split('-').reverse().join('/') : item.expiry}.
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    <button className="w-full py-4 text-xs font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/20">
+                      Limpar notificações
+                    </button>
+                  </>
+                )}
               </div>
             </motion.section>
           </div>

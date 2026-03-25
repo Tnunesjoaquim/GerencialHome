@@ -14,51 +14,30 @@ ALTER TABLE public.residence_invites ENABLE ROW LEVEL SECURITY;
 -- Policy: Owners and Admins can view invites for their residences
 CREATE POLICY "Owners and Admins can view invites"
 ON public.residence_invites FOR SELECT
-USING (
-    EXISTS (
-        SELECT 1 FROM public.residence_members rm
-        WHERE rm.residence_id = public.residence_invites.residence_id
-        AND rm.user_id = auth.uid()
-        AND rm.role = 'Admin'
-    )
-    OR auth.uid() IN (SELECT owner_id FROM public.residences WHERE id = public.residence_invites.residence_id)
-);
+USING ( public.user_is_residence_admin(residence_id) );
 
 -- Policy: Owners and Admins can insert invites
 CREATE POLICY "Owners and Admins can insert invites"
 ON public.residence_invites FOR INSERT
-WITH CHECK (
-    EXISTS (
-        SELECT 1 FROM public.residence_members rm
-        WHERE rm.residence_id = public.residence_invites.residence_id
-        AND rm.user_id = auth.uid()
-        AND rm.role = 'Admin'
-    )
-    OR auth.uid() IN (SELECT owner_id FROM public.residences WHERE id = public.residence_invites.residence_id)
-);
+WITH CHECK ( public.user_is_residence_admin(residence_id) );
 
 -- Policy: Owners and Admins can delete invites
 CREATE POLICY "Owners and Admins can delete invites"
 ON public.residence_invites FOR DELETE
-USING (
-    EXISTS (
-        SELECT 1 FROM public.residence_members rm
-        WHERE rm.residence_id = public.residence_invites.residence_id
-        AND rm.user_id = auth.uid()
-        AND rm.role = 'Admin'
-    )
-    OR auth.uid() IN (SELECT owner_id FROM public.residences WHERE id = public.residence_invites.residence_id)
-);
+USING ( public.user_is_residence_admin(residence_id) );
 
 -- Function to process invites automatically when a new user_profile is created
 CREATE OR REPLACE FUNCTION process_residence_invites()
 RETURNS TRIGGER AS $$
 DECLARE
     invite_row RECORD;
+    user_email TEXT;
 BEGIN
-    IF NEW.email IS NOT NULL THEN
+    SELECT email INTO user_email FROM auth.users WHERE id = NEW.id;
+
+    IF user_email IS NOT NULL THEN
         -- Loop through all pending invites for this email
-        FOR invite_row IN (SELECT * FROM public.residence_invites WHERE email ILIKE NEW.email) LOOP
+        FOR invite_row IN (SELECT * FROM public.residence_invites WHERE email ILIKE user_email) LOOP
             -- Insert the user into the residence_members
             INSERT INTO public.residence_members (residence_id, user_id, role)
             VALUES (invite_row.residence_id, NEW.id, invite_row.role)

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { getSelectedResidenceObj } from '../dashboard/actions';
+import { createStaffAccount, removeUserFromResidence } from './actions';
 
 interface Role {
   id: string;
@@ -42,12 +43,14 @@ export default function Usuarios() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
 
-  // Form State
+  const [ownedResidences, setOwnedResidences] = useState<{id: string, name: string}[]>([]);
   const [formData, setFormData] = useState({
     full_name: '',
     nickname: '',
     email: '',
-    role: 'Staff'
+    password: '',
+    role: 'Staff',
+    residence_ids: [] as string[]
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -74,8 +77,11 @@ export default function Usuarios() {
       setIsOwner(residenceInfo.owner_id === currentUserId);
     }
 
-    // 2. Fetch the owner profile
+    // 2. Fetch the owner profile and their residences
     const { data: ownerProfile } = await supabase.from('user_profiles').select('*').eq('id', residenceInfo?.owner_id).single();
+
+    const { data: myResidences } = await supabase.from('residences').select('id, name').eq('owner_id', currentUserId);
+    if (myResidences) setOwnedResidences(myResidences);
 
     // 3. Fetch residence members and their profiles
     const { data: membersData } = await supabase
@@ -159,95 +165,80 @@ export default function Usuarios() {
       full_name: user.full_name,
       nickname: user.nickname || '',
       email: '', // Don't allow editing email here yet
+      password: '',
       role: user.roleName === 'Owner' ? 'Owner' : user.roleName,
+      residence_ids: residenceId ? [residenceId] : []
     });
     setAvatarFile(null);
     setIsModalOpen(true);
   };
 
   const handleSave = async () => {
-    if (!formData.full_name) return;
+    if (editingUser && !editingUser.isPending && !formData.full_name) return;
     setIsUploading(true);
 
-    let uploadedAvatarUrl = editingUser?.avatar_url;
+    if (editingUser) {
+      // 1. Client-side Avatar Upload
+      let uploadedAvatarUrl = editingUser.avatar_url;
 
-    if (avatarFile) {
-      const { data: authData } = await supabase.auth.getUser();
-      const currentUserId = authData.user?.id;
+      if (avatarFile) {
+        const { data: authData } = await supabase.auth.getUser();
+        const currentUserId = authData.user?.id;
 
-      if (currentUserId) {
-        const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${currentUserId}/${Date.now()}.${fileExt}`;
+        if (currentUserId) {
+          const fileExt = avatarFile.name.split('.').pop();
+          const fileName = `${currentUserId}/${Date.now()}.${fileExt}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, avatarFile, { upsert: true });
-
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('avatars')
-            .getPublicUrl(fileName);
-          uploadedAvatarUrl = publicUrl;
+            .upload(fileName, avatarFile, { upsert: true });
+
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('avatars')
+              .getPublicUrl(fileName);
+            uploadedAvatarUrl = publicUrl;
+          }
         }
       }
-    }
 
-    if (editingUser) {
-      // 1. Update Profile
+      // 2. Update Profile
       await supabase.from('user_profiles').update({
         full_name: formData.full_name,
         nickname: formData.nickname,
         avatar_url: uploadedAvatarUrl
       }).eq('id', editingUser.id);
 
-      // 2. Update Role (Only if it's not the owner and role changed)
+      // 3. Update Role (Only if it's not the owner and role changed)
       if (editingUser.roleName !== 'Owner' && formData.role !== 'Owner') {
         await supabase.from('residence_members').update({ role: formData.role }).match({ residence_id: residenceId, user_id: editingUser.id });
       }
     } else {
-      // Simulate invite / Add member workflow
-      if (!formData.email) {
-        alert("Preencha o e-mail para adicionar um membro.");
-        return setIsUploading(false);
+      // Direct User Creation via Admin Server Action
+      if (!formData.email || !formData.password || !formData.full_name) {
+        alert("Preencha Nome Completo, E-mail e Senha para adicionar um colaborador.");
+        setIsUploading(false);
+        return;
       }
 
-      // Look up user by email (Note: You may need a secure RPC for this if emails are not public. Assuming email is stored in user_profiles for MVP)
-      const { data: foundUser } = await supabase.from('user_profiles').select('id, full_name').ilike('email', formData.email).single();
+      const serverFormData = new FormData();
+      serverFormData.append('full_name', formData.full_name);
+      serverFormData.append('email', formData.email.toLowerCase().trim());
+      serverFormData.append('password', formData.password);
+      serverFormData.append('role', formData.role);
+      serverFormData.append('residence_ids', JSON.stringify(formData.residence_ids.length > 0 ? formData.residence_ids : [residenceId]));
+      if (avatarFile) {
+        serverFormData.append('avatar', avatarFile);
+      }
 
-      if (!foundUser) {
-        // Invite Unregistered User
-        const { error: inviteError } = await supabase.from('residence_invites').insert({
-          residence_id: residenceId,
-          email: formData.email.toLowerCase().trim(),
-          role: formData.role
-        });
+      const result = await createStaffAccount(serverFormData);
 
-        if (inviteError) {
-          if (inviteError.code === '23505') {
-            alert("Este e-mail já possui um convite pendente para esta residência.");
-          } else {
-            alert("Erro ao convidar: " + inviteError.message);
-          }
-        } else {
-          alert("Convite registrado! O usuário poderá criar sua conta na tela de login e será adicionado automaticamente.");
-        }
-      } else if (foundUser.id === residenceOwnerId) {
-        alert("Este usuário já é o dono da residência.");
+      if (result?.error) {
+        alert("Erro ao criar usuário: " + result.error);
+        setIsUploading(false);
+        return;
       } else {
-        const { error } = await supabase.from('residence_members').insert({
-          residence_id: residenceId,
-          user_id: foundUser.id,
-          role: formData.role
-        });
-        if (error) {
-          if (error.code === '23505') {
-            alert("Este usuário já é um membro.");
-          } else {
-            alert("Erro ao adicionar membro: " + error.message);
-          }
-        } else {
-          alert("Usuário adicionado com sucesso!");
-        }
+        alert("Usuário criado com sucesso e já possui acesso à residência!");
       }
     }
 
@@ -262,7 +253,10 @@ export default function Usuarios() {
       if (isPending && inviteId) {
         await supabase.from('residence_invites').delete().eq('id', inviteId);
       } else {
-        await supabase.from('residence_members').delete().match({ residence_id: residenceId, user_id: id });
+        const res = await removeUserFromResidence(id, residenceId!);
+        if (res?.error) {
+          alert("Erro ao remover: " + res.error);
+        }
       }
       fetchUsersAndRoles();
     }
@@ -286,7 +280,18 @@ export default function Usuarios() {
             <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base">Administre permissões e fluxos de trabalho da equipe centralizada (Estilo Discord).</p>
           </div>
           <button
-            onClick={() => { setEditingUser(null); setIsModalOpen(true); }}
+            onClick={() => { 
+                setEditingUser(null); 
+                setFormData({
+                    full_name: '',
+                    nickname: '',
+                    email: '',
+                    password: '',
+                    role: 'Staff',
+                    residence_ids: residenceId ? [residenceId] : []
+                });
+                setIsModalOpen(true); 
+            }}
             className="flex items-center justify-center gap-3 rounded-2xl h-14 px-8 bg-primary text-slate-900 text-sm font-black hover:brightness-110 transition-all shadow-xl shadow-primary/20 uppercase tracking-widest active:scale-95 whitespace-nowrap"
           >
             <span className="material-symbols-outlined font-black">person_add</span>
@@ -303,16 +308,23 @@ export default function Usuarios() {
             </div>
           </motion.div>
 
-          {RESIDENCE_ROLES.slice(0, 2).map((role, i) => (
-            <motion.div key={role.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 * (i + 1) }} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
-              <div>
-                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Membros: {role.name}</p>
-                <p className="text-3xl font-black tracking-tight" style={{ color: role.color }}>
-                  {loading ? '-' : users.filter(u => u.roles.some(r => r.id === role.id)).length}
-                </p>
-              </div>
-            </motion.div>
-          ))}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
+            <div>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Membros: Administrador</p>
+              <p className="text-3xl font-black tracking-tight text-[#16a34a]">
+                {loading ? '-' : users.filter(u => u.roleName === 'Owner' || u.roleName === 'Admin').length}
+              </p>
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
+            <div>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Membros: Membro (Staff)</p>
+              <p className="text-3xl font-black tracking-tight text-[#3b82f6]">
+                {loading ? '-' : users.filter(u => u.roleName === 'Staff').length}
+              </p>
+            </div>
+          </motion.div>
         </div>
 
         {/* Table */}
@@ -368,7 +380,7 @@ export default function Usuarios() {
                       {/* Assuming canEditOthers is a prop or state variable */}
                       {/* For simplicity, let's assume `true` for now or add a check for owner/admin */}
                       {/* Replace with actual logic for `canEditOthers` */}
-                      {true && user.roleName !== 'Owner' && !user.isPending && (
+                      {true && !user.isPending && (
                         <button onClick={() => openEdit(user)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-primary transition-colors shadow-sm" title="Editar">
                           <span className="material-symbols-outlined text-[16px]">edit</span>
                         </button>
@@ -401,105 +413,148 @@ export default function Usuarios() {
               </div>
 
               <div className="flex flex-col gap-5 mt-6">
-                {editingUser && !editingUser.isPending ? ( // Only show profile fields for existing, non-pending users
-                  <>
-                    <div className="flex items-center gap-6">
-                      <div className="relative group">
-                        {editingUser?.avatar_url || avatarFile ? (
-                          <div
-                            className="size-16 rounded-2xl bg-cover bg-center shadow-inner border border-slate-200 dark:border-slate-700 shrink-0"
-                            style={{ backgroundImage: `url(${avatarFile ? URL.createObjectURL(avatarFile) : editingUser?.avatar_url})` }}
-                          />
-                        ) : (
-                          <div className="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-xl shrink-0 border border-primary/20">
-                            {getInitials(formData.full_name)}
-                          </div>
-                        )}
-
-                        {/* Status badge */}
-                        <div className="absolute -bottom-1 -right-1 size-5 bg-green-500 border-2 border-white dark:border-slate-800 rounded-full"></div>
+                <div className="flex items-center gap-6">
+                  <div className="relative group">
+                    {editingUser?.avatar_url || avatarFile ? (
+                      <div
+                        className="size-16 rounded-2xl bg-cover bg-center shadow-inner border border-slate-200 dark:border-slate-700 shrink-0"
+                        style={{ backgroundImage: `url(${avatarFile ? URL.createObjectURL(avatarFile) : editingUser?.avatar_url})` }}
+                      />
+                    ) : (
+                      <div className="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-xl shrink-0 border border-primary/20">
+                        {getInitials(formData.full_name || formData.email)}
                       </div>
+                    )}
+                    <div className="absolute -bottom-1 -right-1 size-5 bg-green-500 border-2 border-white dark:border-slate-800 rounded-full"></div>
+                  </div>
 
-                      <div className="flex flex-col gap-2">
-                        <label className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300">
-                          Alterar Imagem
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              if (e.target.files && e.target.files.length > 0) {
-                                setAvatarFile(e.target.files[0]);
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nome Completo</label>
+                  <div className="flex flex-col gap-2">
+                    <label className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300">
+                      Alterar Imagem
                       <input
-                        type="text"
-                        value={formData.full_name}
-                        onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            setAvatarFile(e.target.files[0]);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nome Completo</label>
+                  <input
+                    type="text"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+
+                {editingUser && !editingUser.isPending ? (
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Apelido (Nickname)</label>
+                    <input
+                      type="text"
+                      placeholder="@seunick"
+                      value={formData.nickname}
+                      onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                      className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">E-mail de Acesso</label>
+                      <input
+                        type="email"
+                        placeholder="email@exemplo.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
                       />
                     </div>
-
                     <div>
-                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Apelido (Nickname)</label>
+                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Senha de Acesso</label>
                       <input
-                        type="text"
-                        placeholder="@seunick"
-                        value={formData.nickname}
-                        onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                        type="password"
+                        placeholder="Defina uma senha"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
                       />
                     </div>
                   </>
-                ) : (
-                  <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">E-mail do Colaborador</label>
-                    <input
-                      type="email"
-                      placeholder="email@exemplo.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
-                    />
-                    <p className="text-xs text-slate-500 mt-2 ml-2">O usuário deve estar previamente cadastrado no sistema.</p>
-                  </div>
                 )}
 
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Atribuir Cargos (Roles)</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {RESIDENCE_ROLES.map((role) => {
-                      const isSelected = formData.role === role.id;
-                      return (
-                        <div
-                          key={role.id}
-                          onClick={() => toggleRoleSelection(role.id)}
-                          className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected
-                            ? 'border-primary bg-primary/5 dark:bg-primary/10'
-                            : 'border-slate-200 dark:border-slate-800 hover:border-primary/50 bg-white dark:bg-slate-900'
-                            }`}
-                        >
-                          <div className="size-10 rounded-full flex items-center justify-center font-black" style={{ backgroundColor: `${role.color}20`, color: role.color }}>
-                            <span className="material-symbols-outlined">{role.id === 'Admin' ? 'shield_person' : 'person'}</span>
-                          </div>
-                          <div className="flex-1">
-                            <h4 className={`font-bold ${isSelected ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>{role.name}</h4>
-                          </div>
-                          <div className={`size-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-primary bg-primary' : 'border-slate-300 dark:border-slate-700'}`}>
-                            {isSelected && <span className="material-symbols-outlined text-white text-sm font-black">check</span>}
-                          </div>
+                    {editingUser?.roleName === 'Owner' ? (
+                      <div className="sm:col-span-2 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center gap-4 opacity-75">
+                        <div className="size-10 rounded-full flex items-center justify-center font-black" style={{ backgroundColor: `#9333ea20`, color: '#9333ea' }}>
+                          <span className="material-symbols-outlined">shield_person</span>
                         </div>
-                      );
-                    })}
+                        <div>
+                          <h4 className="font-bold text-slate-900 dark:text-white">Dono (Owner)</h4>
+                          <p className="text-[10px] text-slate-500 leading-tight mt-0.5">O cargo principal não pode ser alterado através desta tela.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      RESIDENCE_ROLES.map((role) => {
+                        const isSelected = formData.role === role.id;
+                        return (
+                          <div
+                            key={role.id}
+                            onClick={() => toggleRoleSelection(role.id)}
+                            className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected
+                              ? 'border-primary bg-primary/5 dark:bg-primary/10'
+                              : 'border-slate-200 dark:border-slate-800 hover:border-primary/50 bg-white dark:bg-slate-900'
+                              }`}
+                          >
+                            <div className="size-10 rounded-full flex items-center justify-center font-black" style={{ backgroundColor: `${role.color}20`, color: role.color }}>
+                              <span className="material-symbols-outlined">{role.id === 'Admin' ? 'shield_person' : 'person'}</span>
+                            </div>
+                            <div className="flex-1">
+                              <h4 className={`font-bold ${isSelected ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>{role.name}</h4>
+                            </div>
+                            <div className={`size-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-primary bg-primary' : 'border-slate-300 dark:border-slate-700'}`}>
+                              {isSelected && <span className="material-symbols-outlined text-white text-sm font-black">check</span>}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
+
+                {!editingUser && ownedResidences.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Atribuir às Residências</label>
+                    <div className="flex flex-col gap-2">
+                      {ownedResidences.map(res => (
+                        <label key={res.id} className="flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-primary/50 cursor-pointer bg-slate-50 dark:bg-slate-900 transition-colors">
+                          <input
+                            type="checkbox"
+                            className="size-5 rounded border-slate-300 text-primary focus:ring-primary"
+                            checked={formData.residence_ids.includes(res.id)}
+                            onChange={(e) => {
+                              const newIds = e.target.checked
+                                ? [...formData.residence_ids, res.id]
+                                : formData.residence_ids.filter(id => id !== res.id);
+                              setFormData({ ...formData, residence_ids: newIds });
+                            }}
+                          />
+                          <span className="font-bold text-sm text-slate-900 dark:text-white">{res.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-3 mt-8">

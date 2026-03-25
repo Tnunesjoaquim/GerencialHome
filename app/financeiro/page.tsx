@@ -213,8 +213,70 @@ export default function Financeiro() {
           </motion.div>
         </div>
 
-        {/* Responsive Table */}
-        <div className="overflow-hidden rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-x-auto scrollbar-thin mt-4">
+        {/* Mobile Cards View */}
+        <div className="md:hidden flex flex-col gap-4 mt-6">
+          {bills.map((bill) => (
+            <div key={bill.id} className={`p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col gap-4 ${bill.status === 'Pago' ? 'opacity-60 grayscale-[0.5]' : ''}`}>
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-3">
+                  <div className={`size-10 rounded-xl flex items-center justify-center shadow-inner ${bill.status === 'Pago' ? 'bg-slate-100 dark:bg-slate-800 text-slate-400' : 'bg-primary/10 text-primary'}`}>
+                    <span className="material-symbols-outlined">{bill.icon}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`font-black text-slate-900 dark:text-white uppercase tracking-tight text-sm ${bill.status === 'Pago' ? 'line-through decoration-slate-400' : ''}`}>
+                      {bill.category}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{bill.description}</span>
+                  </div>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-widest ${bill.status === 'Pago'
+                  ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900'
+                  : bill.status === 'Atrasado'
+                    ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900 animate-pulse'
+                    : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                  }`}>
+                  {bill.status}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Valor</span>
+                  <span className={`font-black tracking-tighter text-lg ${bill.status === 'Atrasado' ? 'text-red-600' : bill.status === 'Pago' ? 'text-slate-400' : 'text-slate-900 dark:text-slate-100'}`}>
+                    R$ {bill.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1 items-end">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Vencimento</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-bold italic text-sm text-right">
+                    {new Date(bill.dueDate).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 pt-3 mt-1 border-t border-slate-100 dark:border-slate-800">
+                <button onClick={() => handleTogglePaid(bill.id)} className={`flex-1 h-10 rounded-xl flex items-center justify-center transition-all text-xs font-black uppercase tracking-widest ${bill.status === 'Pago' ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-slate-100 hover:bg-green-500 hover:text-white text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
+                  {bill.status === 'Pago' ? 'Desmarcar' : 'Pagar'}
+                </button>
+                <button onClick={() => openEdit(bill)} className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-primary transition-all flex items-center justify-center">
+                  <span className="material-symbols-outlined text-lg">edit</span>
+                </button>
+                <button onClick={() => handleDelete(bill.id)} className="size-10 rounded-xl bg-red-50 dark:bg-red-950/20 text-red-400 hover:text-red-600 transition-all flex items-center justify-center">
+                  <span className="material-symbols-outlined text-lg">delete</span>
+                </button>
+              </div>
+            </div>
+          ))}
+          {bills.length === 0 && (
+            <div className="py-12 text-center text-slate-400 font-bold uppercase tracking-widest italic border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
+              Nenhuma conta lançada para este período.
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Responsive Table */}
+        <div className="hidden md:block overflow-hidden rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-x-auto scrollbar-thin mt-4">
           <table className="w-full text-left text-sm min-w-[900px]">
             <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
               <tr>
@@ -364,7 +426,7 @@ export default function Financeiro() {
                   onClick={() => setIsModalOpen(false)}
                   className="w-full h-14 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-black uppercase tracking-widest text-xs transition-colors"
                 >
-                  Calcelar Operação
+                  Cancelar Operação
                 </button>
               </div>
             </motion.div>
