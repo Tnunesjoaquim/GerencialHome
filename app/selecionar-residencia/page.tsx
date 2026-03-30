@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { selectResidence, createResidence, deleteResidence } from './actions'
 import { logout } from '@/app/login/actions'
 import * as mot from 'framer-motion/client'
+import { SubmitButton } from '@/components/SubmitButton'
 
 export default async function SelectResidencePage() {
     const supabase = await createClient()
@@ -118,14 +119,21 @@ export default async function SelectResidencePage() {
                                         </button>
                                     </form>
 
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex items-center gap-1 transition-opacity">
+                                        {/* Edit Button Placeholder */}
+                                        <button
+                                            type="button"
+                                            title="Editar Residência"
+                                            className="size-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                                        >
+                                            <span className="material-symbols-outlined text-[20px]">edit</span>
+                                        </button>
+
                                         <form action={deleteResidence.bind(null, house.id, house.photo_url)}>
                                             <button
                                                 type="submit"
                                                 className="size-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                                 title="Excluir Residência"
-                                            // Caution: We can't use window.confirm in SSR directly easily on action submit. 
-                                            // Without JS, this is an instant delete.
                                             >
                                                 <span className="material-symbols-outlined text-[20px]">delete</span>
                                             </button>
@@ -177,13 +185,7 @@ export default async function SelectResidencePage() {
                                 />
                             </div>
 
-                            <button
-                                type="submit"
-                                className="h-14 mt-4 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black tracking-widest text-xs uppercase hover:scale-[1.02] active:scale-95 transition-all shadow-xl hover:shadow-primary/20 flex items-center justify-center gap-2"
-                            >
-                                <span className="material-symbols-outlined">add_circle</span>
-                                Adicionar
-                            </button>
+                            <SubmitButton />
                         </form>
                     </div>
 

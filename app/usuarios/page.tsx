@@ -238,7 +238,11 @@ export default function Usuarios() {
         setIsUploading(false);
         return;
       } else {
-        alert("Usuário criado com sucesso e já possui acesso à residência!");
+        if (result?.userExisted) {
+            alert("Este e-mail já estava registrado no sistema. O usuário foi adicionado à residência com sucesso!");
+        } else {
+            alert("Usuário criado com sucesso e já possui acesso à residência!");
+        }
       }
     }
 
@@ -329,7 +333,8 @@ export default function Usuarios() {
 
         {/* Table */}
         <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-x-auto scrollbar-thin mt-4">
-          <table className="w-full text-left border-collapse min-w-[900px]">
+          {/* Desktop Table (Hidden on Mobile) */}
+          <table className="hidden md:table w-full text-left border-collapse min-w-[900px]">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50">
                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Colaborador</th>
@@ -377,9 +382,6 @@ export default function Usuarios() {
                   </td>
                   <td className="px-8 py-5 text-right">
                     <div className="flex justify-end gap-3">
-                      {/* Assuming canEditOthers is a prop or state variable */}
-                      {/* For simplicity, let's assume `true` for now or add a check for owner/admin */}
-                      {/* Replace with actual logic for `canEditOthers` */}
                       {true && !user.isPending && (
                         <button onClick={() => openEdit(user)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-primary transition-colors shadow-sm" title="Editar">
                           <span className="material-symbols-outlined text-[16px]">edit</span>
@@ -396,6 +398,60 @@ export default function Usuarios() {
               ))}
             </tbody>
           </table>
+
+          {/* Mobile Cards (Hidden on Desktop) */}
+          <div className="md:hidden flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+            {users.map((user) => (
+              <div key={user.id} className="flex flex-col gap-4 p-5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                <div className="flex items-center gap-4">
+                  {/* Avatar */}
+                  {user.avatar_url ? (
+                    <div className="size-12 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm shrink-0">
+                      <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="size-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-sm text-slate-400 border border-slate-200 dark:border-slate-700 shrink-0">{user.initials}</div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <span className="font-bold text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2 flex-wrap">
+                      <span className="truncate">{user.full_name}</span>
+                      {user.isPending && (
+                        <span className="shrink-0 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase tracking-widest border border-orange-200 dark:border-orange-800/50">
+                          Pendente
+                        </span>
+                      )}
+                    </span>
+                    {user.nickname ? (
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold truncate">@{user.nickname}</span>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 block truncate">{user.isPending ? user.email : user.id.substring(0, 8)}</span>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  {user.roles.length > 0 ? user.roles.map(r => (
+                    <span key={r.id} style={{ borderColor: r.color, color: r.color, backgroundColor: `${r.color}15` }} className="px-3 py-1 rounded border text-[10px] font-black uppercase tracking-widest">
+                      {r.name}
+                    </span>
+                  )) : <span className="text-xs italic text-slate-400">Sem Cargo</span>}
+                </div>
+
+                <div className="flex justify-end gap-3 mt-1 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+                  {true && !user.isPending && (
+                    <button onClick={() => openEdit(user)} className="flex-1 h-10 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-primary transition-colors shadow-sm text-xs font-bold gap-2 uppercase tracking-widest" title="Editar">
+                      <span className="material-symbols-outlined text-[16px]">edit</span> Editar
+                    </button>
+                  )}
+                  {true && user.roleName !== 'Owner' && (
+                    <button onClick={() => handleDelete(user.id, user.isPending, user.inviteId)} className="flex-1 h-10 px-4 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-sm text-xs font-bold gap-2 uppercase tracking-widest" title={user.isPending ? "Cancelar Convite" : "Excluir"}>
+                      <span className="material-symbols-outlined text-[16px]">{user.isPending ? 'cancel' : 'delete'}</span> {user.isPending ? 'Cancelar' : 'Remover'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
           {users.length === 0 && !loading && (
             <div className="p-10 text-center text-slate-500 dark:text-slate-400 font-bold">Nenhum colaborador carregado do banco de dados.</div>
           )}

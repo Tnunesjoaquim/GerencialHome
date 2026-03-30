@@ -28,21 +28,31 @@ export async function createStaffAccount(formData: FormData) {
             return { error: 'Preencha todos os campos obrigatórios.' };
         }
 
-        // 1. Create the user in Supabase Auth bypassing normal sign-up checks
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-            email: email,
-            password: password,
-            email_confirm: true, // Auto confirm so they can log in immediately
-            user_metadata: {
-                full_name: fullName,
-            }
+        // 1. Check if user already exists
+        let newUserId: string;
+        const normalizedEmail = email.toLowerCase().trim();
+        const { data: existingUserId } = await supabaseAdmin.rpc('get_user_id_by_email', { 
+            email_input: normalizedEmail
         });
 
-        if (authError) {
-            return { error: authError.message };
-        }
+        if (existingUserId) {
+            newUserId = existingUserId;
+        } else {
+            // Create the user in Supabase Auth bypassing normal sign-up checks
+            const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+                email: normalizedEmail,
+                password: password,
+                email_confirm: true, // Auto confirm so they can log in immediately
+                user_metadata: {
+                    full_name: fullName,
+                }
+            });
 
-        const newUserId = authData.user.id;
+            if (authError) {
+                return { error: authError.message };
+            }
+            newUserId = authData.user.id;
+        }
 
         // The database trigger "on_auth_user_created" will have already created the profile
         // Now we upload the avatar via Admin if one was provided
@@ -80,16 +90,13 @@ export async function createStaffAccount(formData: FormData) {
         }));
 
         const { error: memberError } = await supabaseAdmin.from('residence_members')
-            .insert(inserts);
+            .upsert(inserts, { onConflict: 'residence_id, user_id' });
 
         if (memberError) {
-            // In case they are already added, though unlikely here
-            if (memberError.code !== '23505') {
-                return { error: 'Usuário criado, mas erro ao associar residência: ' + memberError.message };
-            }
+            return { error: 'Erro ao associar residência: ' + memberError.message };
         }
 
-        return { success: true };
+        return { success: true, userExisted: !!existingUserId };
 
     } catch (err: any) {
         return { error: err.message || 'Erro interno no servidor' };
