@@ -231,18 +231,24 @@ export default function Usuarios() {
         serverFormData.append('avatar', avatarFile);
       }
 
-      const result = await createStaffAccount(serverFormData);
+      try {
+        const result = await createStaffAccount(serverFormData);
 
-      if (result?.error) {
-        alert("Erro ao criar usuário: " + result.error);
+        if (result?.error) {
+          alert("Erro ao criar usuário: " + result.error);
+          setIsUploading(false);
+          return;
+        } else {
+          if (result?.userExisted) {
+              alert("Este e-mail já estava registrado no sistema. O usuário foi adicionado à residência com sucesso!");
+          } else {
+              alert("Usuário criado com sucesso e já possui acesso à residência!");
+          }
+        }
+      } catch (err: any) {
+        alert("Ocorreu um erro no servidor (provavelmente falta de variável de ambiente no Vercel). Detalhes: " + err.message);
         setIsUploading(false);
         return;
-      } else {
-        if (result?.userExisted) {
-            alert("Este e-mail já estava registrado no sistema. O usuário foi adicionado à residência com sucesso!");
-        } else {
-            alert("Usuário criado com sucesso e já possui acesso à residência!");
-        }
       }
     }
 
