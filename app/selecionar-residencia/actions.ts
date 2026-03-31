@@ -71,6 +71,74 @@ export async function createResidence(formData: FormData) {
     }
 }
 
+export async function editResidence(residenceId: string, formData: FormData) {
+    const supabase = await createClient()
+
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return redirect('/login')
+
+    const name = formData.get('residenceName') as string
+    const address = formData.get('address') as string
+    const number = formData.get('number') as string
+    const photo = formData.get('photo') as File | null
+
+    if (!name || name.trim() === '') return
+
+    let photo_url = undefined
+
+    // Upload photo if provided
+    if (photo && photo.size > 0) {
+        const fileExt = photo.name.split('.').pop()
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`
+        const filePath = `${user.id}/${fileName}`
+
+        const { error: uploadError } = await supabase.storage
+            .from('photos')
+            .upload(filePath, photo)
+
+        if (!uploadError) {
+            const { data } = supabase.storage.from('photos').getPublicUrl(filePath)
+            photo_url = data.publicUrl
+        }
+    }
+
+    const updates: any = {
+        name: name.trim(),
+        address: address ? address.trim() : null,
+        number: number ? number.trim() : null,
+    }
+    
+    if (photo_url !== undefined) {
+        updates.photo_url = photo_url
+    }
+
+    // Update
+    const { data: updatedResidence, error } = await supabase
+        .from('residences')
+        .update(updates)
+        .eq('id', residenceId)
+        .eq('owner_id', user.id) // Ensure ownership
+        .select()
+        .single()
+
+    if (!error && updatedResidence) {
+        const cookieStore = await cookies()
+        const currentCookie = cookieStore.get('selected_residence')
+        if (currentCookie) {
+            try {
+                const currentData = JSON.parse(currentCookie.value)
+                if (currentData.id === residenceId) {
+                    cookieStore.set('selected_residence', JSON.stringify({ id: updatedResidence.id, name: updatedResidence.name }), { path: '/' })
+                }
+            } catch (e) {}
+        }
+        revalidatePath('/selecionar-residencia')
+    }
+}
+
 export async function deleteResidence(residenceId: string, photoUrl: string | null) {
     const supabase = await createClient()
 

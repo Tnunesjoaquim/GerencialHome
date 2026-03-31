@@ -1,9 +1,10 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import { selectResidence, createResidence, deleteResidence } from './actions'
+import { selectResidence, createResidence, deleteResidence, editResidence } from './actions'
 import { logout } from '@/app/login/actions'
 import * as mot from 'framer-motion/client'
 import { SubmitButton } from '@/components/SubmitButton'
+import { EditResidenceButton } from '@/components/EditResidenceButton'
 
 export default async function SelectResidencePage() {
     const supabase = await createClient()
@@ -120,14 +121,16 @@ export default async function SelectResidencePage() {
                                     </form>
 
                                     <div className="flex items-center gap-1 transition-opacity">
-                                        {/* Edit Button Placeholder */}
-                                        <button
-                                            type="button"
-                                            title="Editar Residência"
-                                            className="size-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
-                                        >
-                                            <span className="material-symbols-outlined text-[20px]">edit</span>
-                                        </button>
+                                        <EditResidenceButton 
+                                            house={{
+                                                id: house.id,
+                                                name: house.name,
+                                                address: house.address,
+                                                number: house.number,
+                                                photo_url: house.photo_url
+                                            }}
+                                            onEditAction={editResidence}
+                                        />
 
                                         <form action={deleteResidence.bind(null, house.id, house.photo_url)}>
                                             <button
