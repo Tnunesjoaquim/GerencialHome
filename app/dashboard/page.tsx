@@ -187,7 +187,7 @@ export default function Dashboard() {
               <h1 className="text-slate-900 dark:text-white text-3xl md:text-4xl font-black leading-tight tracking-tight">
                 Olá, {userName}! 👋
               </h1>
-              <p className="text-slate-500 dark:text-slate-400 text-base md:text-lg">
+              <p className="text-slate-500 dark:text-zinc-400 text-base md:text-lg">
                 Aqui está o resumo da <span className="text-primary font-bold">{residence}</span> para hoje.
               </p>
             </div>
@@ -195,10 +195,10 @@ export default function Dashboard() {
             {/* NOVO: Botão Selecionar Residência */}
             <Link
               href="/selecionar-residencia"
-              className="group flex items-center gap-2 px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-primary transition-all shadow-sm"
+              className="group flex items-center gap-2 px-5 py-3 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl hover:border-primary transition-all shadow-sm"
             >
               <span className="material-symbols-outlined text-primary group-hover:rotate-180 transition-transform">swap_horiz</span>
-              <span className="font-bold text-sm text-slate-700 dark:text-slate-300">Trocar Residência</span>
+              <span className="font-bold text-sm text-slate-700 dark:text-zinc-300">Trocar Residência</span>
             </Link>
           </motion.div>
 
@@ -209,7 +209,7 @@ export default function Dashboard() {
               <motion.div
                 variants={itemVariants}
                 whileHover={{ scale: 1.02 }}
-                className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4 relative overflow-hidden group h-full cursor-pointer hover:border-primary/50"
+                className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col gap-4 relative overflow-hidden group h-full cursor-pointer hover:border-primary/50"
               >
                 <div className="flex justify-between items-start z-10">
                   <div className="size-12 rounded-xl bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center">
@@ -228,7 +228,7 @@ export default function Dashboard() {
                 <div className="z-10">
                   <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Saldo Mensal</p>
                   <h3 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mt-1">R$ {financeStats.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
-                  <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-4 overflow-hidden">
+                  <div className="w-full bg-slate-100 dark:bg-zinc-800 h-2 rounded-full mt-4 overflow-hidden">
                     <div className="bg-green-500 h-full transition-all duration-500" style={{ width: `${financeStats.percentPaid}%` }} />
                   </div>
                   <p className="text-[10px] text-slate-400 mt-2 font-medium">{financeStats.percentPaid}% DESPESAS PAGAS</p>
@@ -244,7 +244,7 @@ export default function Dashboard() {
               <motion.div
                 variants={itemVariants}
                 whileHover={{ scale: 1.02 }}
-                className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4 relative overflow-hidden group h-full cursor-pointer hover:border-primary/50"
+                className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col gap-4 relative overflow-hidden group h-full cursor-pointer hover:border-primary/50"
               >
                 <div className="flex justify-between items-start z-10">
                   <div className="size-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center">
@@ -275,14 +275,14 @@ export default function Dashboard() {
               <motion.div
                 variants={itemVariants}
                 whileHover={{ scale: 1.02 }}
-                className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4 relative overflow-hidden group h-full cursor-pointer hover:border-primary/50"
+                className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col gap-4 relative overflow-hidden group h-full cursor-pointer hover:border-primary/50"
               >
                 <div className="flex justify-between items-start z-10">
                   <div className="size-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                     <span className="material-symbols-outlined">event</span>
                   </div>
                   {nextEvent && (
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest ${nextEvent.tag_color || 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest ${nextEvent.tag_color || 'bg-slate-100 dark:bg-zinc-800 text-slate-500'}`}>
                       {nextEvent.tag}
                     </span>
                   )}
@@ -300,9 +300,9 @@ export default function Dashboard() {
                   </p>
                   <div className="flex -space-x-2 mt-4">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="size-8 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 bg-cover shadow-sm" style={{ backgroundImage: `url(https://i.pravatar.cc/150?u=${i})` }} />
+                      <div key={i} className="size-8 rounded-full border-2 border-white dark:border-zinc-900 bg-slate-200 bg-cover shadow-sm" style={{ backgroundImage: `url(https://i.pravatar.cc/150?u=${i})` }} />
                     ))}
-                    <div className="size-8 rounded-full border-2 border-white dark:border-slate-900 bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">+2</div>
+                    <div className="size-8 rounded-full border-2 border-white dark:border-zinc-900 bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">+2</div>
                   </div>
                 </div>
                 <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -315,7 +315,7 @@ export default function Dashboard() {
             <motion.div
               variants={itemVariants}
               whileHover={{ scale: 1.02 }}
-              className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4 relative overflow-hidden group"
+              className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col gap-4 relative overflow-hidden group"
             >
               <div className="flex justify-between items-start z-10">
                 <div className="size-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center">
@@ -350,8 +350,8 @@ export default function Dashboard() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link href="/estoque" className="group">
-                  <div className="bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 transition-all flex items-center gap-4 h-full">
-                    <div className="size-12 md:size-14 rounded-xl bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/20 transition-colors flex items-center justify-center text-slate-600 dark:text-slate-400 group-hover:text-primary">
+                  <div className="bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 transition-all flex items-center gap-4 h-full">
+                    <div className="size-12 md:size-14 rounded-xl bg-slate-100 dark:bg-zinc-800 group-hover:bg-primary/20 transition-colors flex items-center justify-center text-slate-600 dark:text-zinc-400 group-hover:text-primary">
                       <span className="material-symbols-outlined text-2xl md:text-3xl">add_shopping_cart</span>
                     </div>
                     <div>
@@ -361,8 +361,8 @@ export default function Dashboard() {
                   </div>
                 </Link>
                 <Link href="/financeiro" className="group">
-                  <div className="bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 transition-all flex items-center gap-4 h-full">
-                    <div className="size-12 md:size-14 rounded-xl bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/20 transition-colors flex items-center justify-center text-slate-600 dark:text-slate-400 group-hover:text-primary">
+                  <div className="bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 transition-all flex items-center gap-4 h-full">
+                    <div className="size-12 md:size-14 rounded-xl bg-slate-100 dark:bg-zinc-800 group-hover:bg-primary/20 transition-colors flex items-center justify-center text-slate-600 dark:text-zinc-400 group-hover:text-primary">
                       <span className="material-symbols-outlined text-2xl md:text-3xl">receipt_long</span>
                     </div>
                     <div>
@@ -372,8 +372,8 @@ export default function Dashboard() {
                   </div>
                 </Link>
                 <Link href="/calendario" className="group">
-                  <div className="bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 transition-all flex items-center gap-4 h-full">
-                    <div className="size-12 md:size-14 rounded-xl bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/20 transition-colors flex items-center justify-center text-slate-600 dark:text-slate-400 group-hover:text-primary">
+                  <div className="bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 transition-all flex items-center gap-4 h-full">
+                    <div className="size-12 md:size-14 rounded-xl bg-slate-100 dark:bg-zinc-800 group-hover:bg-primary/20 transition-colors flex items-center justify-center text-slate-600 dark:text-zinc-400 group-hover:text-primary">
                       <span className="material-symbols-outlined text-2xl md:text-3xl">event_available</span>
                     </div>
                     <div>
@@ -383,8 +383,8 @@ export default function Dashboard() {
                   </div>
                 </Link>
                 <Link href="/usuarios" className="group">
-                  <div className="bg-white dark:bg-slate-900 p-5 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 transition-all flex items-center gap-4 h-full">
-                    <div className="size-12 md:size-14 rounded-xl bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/20 transition-colors flex items-center justify-center text-slate-600 dark:text-slate-400 group-hover:text-primary">
+                  <div className="bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 transition-all flex items-center gap-4 h-full">
+                    <div className="size-12 md:size-14 rounded-xl bg-slate-100 dark:bg-zinc-800 group-hover:bg-primary/20 transition-colors flex items-center justify-center text-slate-600 dark:text-zinc-400 group-hover:text-primary">
                       <span className="material-symbols-outlined text-2xl md:text-3xl">manage_accounts</span>
                     </div>
                     <div>
@@ -401,17 +401,17 @@ export default function Dashboard() {
               <h2 className="text-xl md:text-2xl font-black flex items-center gap-2">
                 <span className="material-symbols-outlined text-red-500">notifications_active</span> Notificações
               </h2>
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xl">
+              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden shadow-xl">
                 {overdueBills.length === 0 && lowStockItems.length === 0 && expiredItems.length === 0 ? (
                   <div className="p-6 text-center">
                     <span className="material-symbols-outlined text-4xl text-green-500 mb-2 mt-4">check_circle</span>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Tudo em dia!</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-zinc-300">Tudo em dia!</p>
                     <p className="text-xs text-slate-500 mt-1 mb-4">Nenhuma notificação pendente.</p>
                   </div>
                 ) : (
                   <>
                     {overdueBills.map((bill, idx) => (
-                      <div key={`fin-${bill.id || idx}`} className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 bg-red-50 dark:bg-red-950/20">
+                      <div key={`fin-${bill.id || idx}`} className="p-4 border-b border-slate-100 dark:border-zinc-800 flex items-center gap-3 bg-red-50 dark:bg-red-950/20">
                         <span className="material-symbols-outlined text-red-500">error</span>
                         <div>
                           <p className="text-sm font-bold text-red-700 dark:text-red-400">{bill.category || 'Conta'} Vencida!</p>
@@ -422,7 +422,7 @@ export default function Dashboard() {
                       </div>
                     ))}
                     {lowStockItems.map((item, idx) => (
-                      <div key={`inv-${item.id || idx}`} className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                      <div key={`inv-${item.id || idx}`} className="p-4 border-b border-slate-100 dark:border-zinc-800 flex items-center gap-3">
                         <span className="material-symbols-outlined text-orange-500">shopping_cart_checkout</span>
                         <div>
                           <p className="text-sm font-bold">Estoque Baixo</p>
@@ -431,7 +431,7 @@ export default function Dashboard() {
                       </div>
                     ))}
                     {expiredItems.map((item, idx) => (
-                      <div key={`exp-${item.id || idx}`} className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 bg-red-50 dark:bg-red-950/20">
+                      <div key={`exp-${item.id || idx}`} className="p-4 border-b border-slate-100 dark:border-zinc-800 flex items-center gap-3 bg-red-50 dark:bg-red-950/20">
                         <span className="material-symbols-outlined text-red-500">event_busy</span>
                         <div>
                           <p className="text-sm font-bold text-red-700 dark:text-red-400">Produto Vencido!</p>
@@ -441,7 +441,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                     ))}
-                    <button className="w-full py-4 text-xs font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/20">
+                    <button className="w-full py-4 text-xs font-bold text-slate-500 hover:bg-slate-50 dark:-zinc- transition-colors uppercase tracking-widest bg-slate-50/50 dark:bg-zinc-800/20">
                       Limpar notificações
                     </button>
                   </>

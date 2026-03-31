@@ -40,7 +40,7 @@ export default async function SelectResidencePage() {
     const houses = uniqueResidences.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
     return (
-        <div className="min-h-screen w-full flex bg-slate-50 dark:bg-slate-950 font-sans selection:bg-primary/30">
+        <div className="min-h-screen w-full flex bg-slate-50 dark:bg-zinc-950 font-sans selection:bg-primary/30">
             {/* Left Side - Image/Branding (Hidden on small screens) */}
             <div className="hidden lg:flex w-1/2 relative bg-slate-900 overflow-hidden items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent z-10" />
@@ -79,7 +79,7 @@ export default async function SelectResidencePage() {
 
                     <div className="mb-8">
                         <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Selecione a Residência</h2>
-                        <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">Escolha qual ambiente você deseja gerenciar agora.</p>
+                        <p className="text-slate-500 dark:text-zinc-400 font-medium text-sm">Escolha qual ambiente você deseja gerenciar agora.</p>
                     </div>
 
                     <div className="flex flex-col gap-4">
@@ -90,16 +90,16 @@ export default async function SelectResidencePage() {
                             </div>
                         ) : (
                             houses.map((house) => (
-                                <div key={house.id} className="w-full group relative flex items-center gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-primary transition-all text-left shadow-sm hover:shadow-md">
+                                <div key={house.id} className="w-full group relative flex items-center gap-3 p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-primary transition-all text-left shadow-sm hover:shadow-md">
                                     <form action={selectResidence.bind(null, house.id, house.name)} className="flex-1 min-w-0">
                                         <button type="submit" className="w-full text-left flex items-center gap-4 group-focus:ring-4 focus:ring-primary/10 outline-none rounded-xl">
                                             {house.photo_url ? (
                                                 <div
-                                                    className="size-16 rounded-xl shrink-0 shadow-inner bg-cover bg-center border border-slate-100 dark:border-slate-800"
+                                                    className="size-16 rounded-xl shrink-0 shadow-inner bg-cover bg-center border border-slate-100 dark:border-zinc-800"
                                                     style={{ backgroundImage: `url(${house.photo_url})` }}
                                                 />
                                             ) : (
-                                                <div className="size-16 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0 border border-slate-200 dark:border-slate-700">
+                                                <div className="size-16 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 shrink-0 border border-slate-200 dark:border-zinc-700">
                                                     <span className="material-symbols-outlined text-2xl">home</span>
                                                 </div>
                                             )}
@@ -145,25 +145,25 @@ export default async function SelectResidencePage() {
 
                         <div className="relative mt-8 mb-4">
                             <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t border-slate-200 dark:border-slate-800" />
+                                <span className="w-full border-t border-slate-200 dark:border-zinc-800" />
                             </div>
                             <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-slate-50 dark:bg-slate-950 px-2 text-slate-500 font-bold tracking-widest">Nova Residência</span>
+                                <span className="bg-slate-50 dark:bg-zinc-950 px-2 text-slate-500 font-bold tracking-widest">Nova Residência</span>
                             </div>
                         </div>
 
-                        <form action={createResidence} className="mt-2 flex flex-col gap-3 p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <form action={createResidence} className="mt-2 flex flex-col gap-3 p-5 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm">
 
                             <div className="relative mb-2">
                                 <input type="file" name="photo" accept="image/*" className="hidden" id="photo-upload" />
-                                <label htmlFor="photo-upload" className="flex items-center justify-center gap-2 h-16 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-950 text-slate-500 hover:text-primary hover:border-primary font-bold text-xs uppercase tracking-widest transition-colors cursor-pointer group shadow-sm">
+                                <label htmlFor="photo-upload" className="flex items-center justify-center gap-2 h-16 rounded-2xl border-2 border-dashed border-slate-300 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-950 text-slate-500 hover:text-primary hover:border-primary font-bold text-xs uppercase tracking-widest transition-colors cursor-pointer group shadow-sm">
                                     <span className="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">add_a_photo</span>
                                     <span>Anexar Foto</span>
                                 </label>
                             </div>
 
                             <input
-                                className="h-14 px-5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium text-sm"
+                                className="h-14 px-5 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium text-sm"
                                 name="residenceName"
                                 type="text"
                                 placeholder="Nome (ex: Casa Veraneio)"
@@ -172,13 +172,13 @@ export default async function SelectResidencePage() {
 
                             <div className="flex gap-3">
                                 <input
-                                    className="flex-1 w-full min-w-0 h-14 px-5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium text-sm"
+                                    className="flex-1 w-full min-w-0 h-14 px-5 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium text-sm"
                                     name="address"
                                     type="text"
                                     placeholder="Endereço principal"
                                 />
                                 <input
-                                    className="w-28 shrink-0 h-14 px-5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium text-sm"
+                                    className="w-28 shrink-0 h-14 px-5 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium text-sm"
                                     name="number"
                                     type="text"
                                     placeholder="Número"

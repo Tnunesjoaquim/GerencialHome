@@ -105,7 +105,7 @@ export function Header({ activeTab }: { activeTab: string }) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 h-16 md:h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 z-[100] px-4 md:px-10 flex items-center justify-between transition-all duration-300">
+      <header className="fixed top-0 left-0 right-0 h-16 md:h-20 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-zinc-800 z-[100] px-4 md:px-10 flex items-center justify-between transition-all duration-300">
         <div className="flex items-center gap-10">
           <Link href="/" className="flex items-center gap-2 group">
             <div className="size-8 md:size-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
@@ -124,7 +124,7 @@ export function Header({ activeTab }: { activeTab: string }) {
                 href={link.href}
                 className={`px-4 py-2 rounded-xl text-sm font-bold transition-all relative ${activeTab === link.id
                   ? 'text-primary bg-primary/5'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:-zinc-'
                   }`}
               >
                 {link.label}
@@ -143,7 +143,7 @@ export function Header({ activeTab }: { activeTab: string }) {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="size-10 md:size-11 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-primary/20 transition-all text-slate-600 dark:text-slate-300 group shadow-sm"
+            className="size-10 md:size-11 rounded-2xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center hover:bg-primary/20 transition-all text-slate-600 dark:text-zinc-300 group shadow-sm"
           >
             <span className="material-symbols-outlined group-active:rotate-90 transition-transform">
               {mounted ? (theme === 'dark' ? 'light_mode' : 'dark_mode') : 'dark_mode'}
@@ -154,12 +154,12 @@ export function Header({ activeTab }: { activeTab: string }) {
           <div className="relative" ref={profileMenuRef}>
             <div 
               onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-              className="hidden sm:flex items-center gap-3 pl-2 border-l border-slate-200 dark:border-slate-700 ml-2 cursor-pointer relative"
+              className="hidden sm:flex items-center gap-3 pl-2 border-l border-slate-200 dark:border-zinc-700 ml-2 cursor-pointer relative"
             >
               {userProfile?.avatar_url ? (
                 <div className="size-10 md:size-11 rounded-2xl bg-center bg-cover border-2 border-primary/20 hover:border-primary transition-colors" style={{ backgroundImage: `url(${userProfile.avatar_url})` }}></div>
               ) : (
-                <div className="size-10 md:size-11 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-xs text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-primary transition-colors">
+                <div className="size-10 md:size-11 rounded-2xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center font-black text-xs text-slate-400 border border-slate-200 dark:border-zinc-700 hover:border-primary transition-colors">
                   {userProfile?.initials || '??'}
                 </div>
               )}
@@ -172,9 +172,9 @@ export function Header({ activeTab }: { activeTab: string }) {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-4 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[200]"
+                  className="absolute right-0 mt-4 w-64 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[200]"
                 >
-                  <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col">
+                  <div className="p-4 border-b border-slate-100 dark:border-zinc-800 flex flex-col">
                     <span className="font-black text-slate-900 dark:text-white uppercase truncate text-sm">{userProfile?.full_name || 'Usuário'}</span>
                     <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">{userProfile?.role_name}</span>
                   </div>
@@ -183,7 +183,7 @@ export function Header({ activeTab }: { activeTab: string }) {
                     <Link 
                       href="/perfil" 
                       onClick={() => setIsProfileMenuOpen(false)}
-                      className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold transition-colors text-sm"
+                      className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 dark:-zinc- text-slate-600 dark:text-zinc-300 font-bold transition-colors text-sm"
                     >
                       <span className="material-symbols-outlined text-lg">manage_accounts</span>
                       Editar Perfil
@@ -191,14 +191,14 @@ export function Header({ activeTab }: { activeTab: string }) {
                     <Link 
                       href="/selecionar-residencia" 
                       onClick={() => setIsProfileMenuOpen(false)}
-                      className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold transition-colors text-sm"
+                      className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 dark:-zinc- text-slate-600 dark:text-zinc-300 font-bold transition-colors text-sm"
                     >
                       <span className="material-symbols-outlined text-lg">home_work</span>
                       Trocar Residência
                     </Link>
                   </div>
                   
-                  <div className="border-t border-slate-100 dark:border-slate-800 p-2 flex flex-col pt-2">
+                  <div className="border-t border-slate-100 dark:border-zinc-800 p-2 flex flex-col pt-2">
                     <form action={logout}>
                       <button 
                         type="submit"
@@ -217,7 +217,7 @@ export function Header({ activeTab }: { activeTab: string }) {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="lg:hidden size-10 md:size-11 flex items-center justify-center rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 transition-all active:scale-90"
+            className="lg:hidden size-10 md:size-11 flex items-center justify-center rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-zinc-950 transition-all active:scale-90"
           >
             <span className="material-symbols-outlined font-black">menu</span>
           </button>
@@ -246,10 +246,10 @@ export function Header({ activeTab }: { activeTab: string }) {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="absolute right-0 top-0 bottom-0 w-full max-w-[320px] bg-white dark:bg-slate-900 border-l border-white/10 shadow-2xl flex flex-col"
+              className="absolute right-0 top-0 bottom-0 w-full max-w-[320px] bg-white dark:bg-zinc-900 border-l border-white/10 shadow-2xl flex flex-col"
             >
               {/* Sidebar Header */}
-              <div className="p-6 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+              <div className="p-6 flex items-center justify-between border-b border-slate-100 dark:border-zinc-800">
                 <div className="flex items-center gap-3">
                   <div className="size-10 rounded-xl bg-primary flex items-center justify-center">
                     <span className="material-symbols-outlined text-slate-950 font-black">home</span>
@@ -258,18 +258,18 @@ export function Header({ activeTab }: { activeTab: string }) {
                 </div>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors"
+                  className="size-10 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors"
                 >
                   <span className="material-symbols-outlined font-black">close</span>
                 </button>
               </div>
 
               {/* Sidebar Profile Card */}
-              <div className="mx-6 mt-6 p-4 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center gap-4">
+              <div className="mx-6 mt-6 p-4 rounded-3xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 flex items-center gap-4">
                 {userProfile?.avatar_url ? (
                   <div className="size-12 rounded-2xl bg-center bg-cover border-2 border-primary" style={{ backgroundImage: `url(${userProfile.avatar_url})` }}></div>
                 ) : (
-                  <div className="size-12 rounded-2xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-black text-slate-500 dark:text-slate-400 border-2 border-primary">
+                  <div className="size-12 rounded-2xl bg-slate-200 dark:bg-zinc-700 flex items-center justify-center font-black text-slate-500 dark:text-zinc-400 border-2 border-primary">
                     {userProfile?.initials || '??'}
                   </div>
                 )}
@@ -288,7 +288,7 @@ export function Header({ activeTab }: { activeTab: string }) {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${activeTab === link.id
                       ? 'bg-primary text-slate-900 shadow-lg shadow-primary/20 scale-[1.02]'
-                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-50 dark:-zinc-'
                       }`}
                   >
                     <span className="material-symbols-outlined text-xl">{link.icon}</span>
@@ -301,11 +301,11 @@ export function Header({ activeTab }: { activeTab: string }) {
               </nav>
 
               {/* Sidebar Footer */}
-              <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3">
+              <div className="p-6 border-t border-slate-100 dark:border-zinc-800 flex flex-col gap-3">
                 <Link
                   href="/selecionar-residencia"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full h-14 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full h-14 rounded-2xl border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 font-bold hover:bg-slate-50 dark:-zinc- transition-colors"
                 >
                   <span className="material-symbols-outlined">home_work</span>
                   Trocar Residência

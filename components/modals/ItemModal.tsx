@@ -46,17 +46,17 @@ export function ItemModal({ onClose, onSave, initialData, isEditing = false, def
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" />
-      <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
+      <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
         <h2 className="text-2xl font-black mb-6 dark:text-white uppercase tracking-tight">{isEditing ? 'Editar Item' : 'Adicionar Item'}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nome do Produto</label>
-            <input className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} />
+            <input className="w-full p-4 rounded-xl bg-slate-100 dark:bg-zinc-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} />
           </div>
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Unidade</label>
             <select
-              className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white appearance-none cursor-pointer font-bold text-sm"
+              className="w-full p-4 rounded-xl bg-slate-100 dark:bg-zinc-800 outline-none focus:ring-2 focus:ring-primary dark:text-white appearance-none cursor-pointer font-bold text-sm"
               value={data.unit}
               onChange={(e) => setData({ ...data, unit: e.target.value })}
             >
@@ -70,23 +70,23 @@ export function ItemModal({ onClose, onSave, initialData, isEditing = false, def
           </div>
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Estoque Min.</label>
-            <input type="number" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={data.minStock} onChange={(e) => setData({ ...data, minStock: Number(e.target.value) })} />
+            <input type="number" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-zinc-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={data.minStock} onChange={(e) => setData({ ...data, minStock: Number(e.target.value) })} />
           </div>
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Estoque Atual</label>
-            <input type="number" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={data.currentStock} onChange={(e) => setData({ ...data, currentStock: Number(e.target.value) })} />
+            <input type="number" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-zinc-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={data.currentStock} onChange={(e) => setData({ ...data, currentStock: Number(e.target.value) })} />
           </div>
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Vencimento</label>
-            <input type="date" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={parseExpiryForInput(data.expiry)} onChange={(e) => setData({ ...data, expiry: e.target.value })} />
+            <input type="date" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-zinc-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={parseExpiryForInput(data.expiry)} onChange={(e) => setData({ ...data, expiry: e.target.value })} />
           </div>
           <div className="md:col-span-2">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Responsável</label>
-            <input type="text" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Nome do Responsável" value={data.responsible} onChange={(e) => setData({ ...data, responsible: e.target.value })} />
+            <input type="text" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-zinc-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Nome do Responsável" value={data.responsible} onChange={(e) => setData({ ...data, responsible: e.target.value })} />
           </div>
           <div className="md:col-span-2">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Observações</label>
-            <input className="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Opcional..." value={data.obs} onChange={(e) => setData({ ...data, obs: e.target.value })} />
+            <input className="w-full p-4 rounded-xl bg-slate-100 dark:bg-zinc-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Opcional..." value={data.obs} onChange={(e) => setData({ ...data, obs: e.target.value })} />
           </div>
         </div>
         <div className="flex gap-3 mt-8">

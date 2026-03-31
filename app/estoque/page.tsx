@@ -247,14 +247,14 @@ export default function Estoque() {
             <h1 className="text-3xl md:text-4xl font-black leading-tight tracking-tight text-slate-900 dark:text-white">
               Gestão de Estoque
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base">
+            <p className="text-slate-500 dark:text-zinc-400 text-sm md:text-base">
               Controle total de suprimentos e reposição estratégica.
             </p>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
             <button
               onClick={() => setActiveCategoryModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-sm hover:border-primary border border-slate-200 dark:border-slate-700 transition-all shadow-sm whitespace-nowrap"
+              className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl font-bold text-sm hover:border-primary border border-slate-200 dark:border-zinc-700 transition-all shadow-sm whitespace-nowrap"
             >
               <span className="material-symbols-outlined text-primary">category</span>
               Nova Categoria
@@ -281,7 +281,7 @@ export default function Estoque() {
                     <span className="material-symbols-outlined">{category.icon}</span>
                   </div>
                   <h2 className="text-xl font-black tracking-tight text-slate-800 dark:text-white uppercase">{category.name}</h2>
-                  <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] px-2 py-1 rounded-full font-bold">
+                  <span className="bg-slate-100 dark:bg-zinc-800 text-slate-500 text-[10px] px-2 py-1 rounded-full font-bold">
                     {category.items.length} ITENS
                   </span>
                 </div>
@@ -324,12 +324,12 @@ export default function Estoque() {
               {/* Mobile Cards View */}
               <div className="md:hidden flex flex-col gap-4 mt-4">
                 {category.items.length === 0 ? (
-                  <div className="py-10 text-center text-slate-400 font-bold uppercase tracking-widest italic border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
+                  <div className="py-10 text-center text-slate-400 font-bold uppercase tracking-widest italic border border-dashed border-slate-200 dark:border-zinc-800 rounded-3xl">
                     Nenhum item cadastrado nesta categoria.
                   </div>
                 ) : (
                   category.items.map((item) => (
-                    <div key={item.id} className="p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col gap-4 transition-all">
+                    <div key={item.id} className="p-5 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col gap-4 transition-all">
                       <div className="flex justify-between items-start">
                         <div className="flex flex-col gap-1 pr-4">
                           <span className="font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{item.name}</span>
@@ -343,26 +343,26 @@ export default function Estoque() {
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-2 mt-2 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
+                      <div className="grid grid-cols-2 gap-2 mt-2 bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-2xl border border-slate-100 dark:border-zinc-800">
                         <div className="flex flex-col gap-1">
                           <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Mínimo</span>
-                          <span className="font-black text-slate-700 dark:text-slate-300">{item.minStock} {item.unit}</span>
+                          <span className="font-black text-slate-700 dark:text-zinc-300">{item.minStock} {item.unit}</span>
                         </div>
                         <div className="flex flex-col gap-1 items-end">
                           <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Vencimento</span>
-                          <span className={`font-bold text-sm ${isExpired(item.expiry) ? 'text-red-500 animate-pulse' : 'text-slate-600 dark:text-slate-400'}`}>{formatExpiry(item.expiry)}</span>
+                          <span className={`font-bold text-sm ${isExpired(item.expiry) ? 'text-red-500 animate-pulse' : 'text-slate-600 dark:text-zinc-400'}`}>{formatExpiry(item.expiry)}</span>
                         </div>
                       </div>
                       
                       <div className="flex justify-between items-center mt-2">
                         <div className="flex items-center gap-2">
-                          <div className="size-8 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-black text-primary ring-2 ring-white dark:ring-slate-900 shadow-sm">
+                          <div className="size-8 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-black text-primary ring-2 ring-white dark:ring-zinc-900 shadow-sm">
                             {item.responsible.substring(0, 2).toUpperCase()}
                           </div>
                           <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase truncate max-w-[100px]">{item.responsible}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => openEditItem(category.id, item)} className="size-10 rounded-xl bg-white dark:bg-slate-800 text-slate-400 hover:text-primary transition-colors flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm">
+                          <button onClick={() => openEditItem(category.id, item)} className="size-10 rounded-xl bg-white dark:bg-zinc-800 text-slate-400 hover:text-primary transition-colors flex items-center justify-center border border-slate-200 dark:border-zinc-700 shadow-sm">
                             <span className="material-symbols-outlined text-lg">edit</span>
                           </button>
                           <button
@@ -379,10 +379,10 @@ export default function Estoque() {
               </div>
 
               {/* Desktop Responsive Table Container */}
-              <div className="hidden md:block overflow-x-auto rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl scrollbar-thin mt-6">
+              <div className="hidden md:block overflow-x-auto rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl scrollbar-thin mt-6">
                 <table className="w-full text-left text-sm border-collapse min-w-[800px]">
                   <thead>
-                    <tr className="bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                    <tr className="bg-slate-50/50 dark:bg-zinc-800/30 text-slate-500 dark:text-zinc-400 font-bold uppercase text-[10px] tracking-widest">
                       <th className="px-6 py-4">Produto</th>
                       <th className="px-6 py-4">Unidade</th>
                       <th className="px-6 py-4">Mínimo</th>
@@ -392,21 +392,21 @@ export default function Estoque() {
                       <th className="px-6 py-4 text-center">Ações</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
                     {category.items.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="px-6 py-10 text-center text-slate-400 italic">Nenhum item cadastrado nesta categoria.</td>
                       </tr>
                     ) : (
                       category.items.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                        <tr key={item.id} className="hover:bg-slate-50/50 dark:-zinc-/50 transition-colors group">
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
                               <span className="font-bold text-slate-900 dark:text-white uppercase tracking-tight">{item.name}</span>
                               <span className="text-[10px] text-slate-400 italic">{item.obs}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">{item.unit}</td>
+                          <td className="px-6 py-4 text-slate-600 dark:text-zinc-400 font-medium">{item.unit}</td>
                           <td className="px-6 py-4 font-bold text-slate-400">{item.minStock}</td>
                           <td className="px-6 py-4">
                             <span className={`px-3 py-1 rounded-full font-black text-xs ${item.currentStock <= item.minStock
@@ -416,20 +416,20 @@ export default function Estoque() {
                               {item.currentStock}
                             </span>
                           </td>
-                          <td className={`px-6 py-4 font-medium ${isExpired(item.expiry) ? 'text-red-500 font-bold animate-pulse' : 'text-slate-600 dark:text-slate-400'}`}>
+                          <td className={`px-6 py-4 font-medium ${isExpired(item.expiry) ? 'text-red-500 font-bold animate-pulse' : 'text-slate-600 dark:text-zinc-400'}`}>
                             {formatExpiry(item.expiry)}
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
-                              <div className="size-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary ring-2 ring-white dark:ring-slate-800">
+                              <div className="size-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary ring-2 ring-white dark:ring-zinc-800">
                                 {item.responsible.substring(0, 2).toUpperCase()}
                               </div>
-                              <span className="text-slate-600 dark:text-slate-300 font-medium">{item.responsible}</span>
+                              <span className="text-slate-600 dark:text-zinc-300 font-medium">{item.responsible}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => openEditItem(category.id, item)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary transition-colors flex items-center justify-center shadow-sm">
+                                <button onClick={() => openEditItem(category.id, item)} className="size-8 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-500 hover:text-primary transition-colors flex items-center justify-center shadow-sm">
                                   <span className="material-symbols-outlined text-lg">edit</span>
                                 </button>
                                 <button

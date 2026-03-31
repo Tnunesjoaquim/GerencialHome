@@ -19,7 +19,7 @@ function LoginContent() {
     // The user instruction: "Update /login page with a "Cadastrar" (First Access) form (Name, Email, Passwords, optional Avatar)."
 
     return (
-        <div className="min-h-screen w-full flex bg-slate-50 dark:bg-slate-950 font-sans selection:bg-primary/30">
+        <div className="min-h-screen w-full flex bg-slate-50 dark:bg-zinc-950 font-sans selection:bg-primary/30">
             {/* Left Side - Image/Branding (Hidden on small screens) */}
             <div className="hidden lg:flex w-1/2 relative bg-slate-900 overflow-hidden items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent z-10" />
@@ -68,7 +68,7 @@ function LoginContent() {
                                 <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
                                     {isLogin ? "Bem-vindo de volta" : "Criar sua Conta"}
                                 </h2>
-                                <p className="text-slate-500 dark:text-slate-400 font-medium">
+                                <p className="text-slate-500 dark:text-zinc-400 font-medium">
                                     {isLogin
                                         ? "Use suas credenciais para acessar o painel de controle."
                                         : "Preencha seus dados para seu primeiro acesso ao sistema."}
@@ -85,9 +85,9 @@ function LoginContent() {
                     )}
 
                     {/* Toggle Switch */}
-                    <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl mb-8 relative">
+                    <div className="flex bg-slate-100 dark:bg-zinc-900 p-1 rounded-2xl mb-8 relative">
                         <div
-                            className="absolute bg-white dark:bg-slate-800 h-[calc(100%-8px)] rounded-xl shadow-sm transition-all duration-300 ease-out top-1"
+                            className="absolute bg-white dark:bg-zinc-800 h-[calc(100%-8px)] rounded-xl shadow-sm transition-all duration-300 ease-out top-1"
                             style={{
                                 left: isLogin ? '4px' : 'calc(50% + 2px)',
                                 width: 'calc(50% - 6px)'
@@ -96,14 +96,14 @@ function LoginContent() {
                         <button
                             type="button"
                             onClick={() => setIsLogin(true)}
-                            className={`flex-1 relative z-10 h-10 text-xs font-black uppercase tracking-widest transition-colors ${isLogin ? 'text-slate-900 dark:text-white' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                            className={`flex-1 relative z-10 h-10 text-xs font-black uppercase tracking-widest transition-colors ${isLogin ? 'text-slate-900 dark:text-white' : 'text-slate-400 hover:text-slate-600 dark:-zinc-'}`}
                         >
                             Entrar
                         </button>
                         <button
                             type="button"
                             onClick={() => setIsLogin(false)}
-                            className={`flex-1 relative z-10 h-10 text-xs font-black uppercase tracking-widest transition-colors ${!isLogin ? 'text-slate-900 dark:text-white' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                            className={`flex-1 relative z-10 h-10 text-xs font-black uppercase tracking-widest transition-colors ${!isLogin ? 'text-slate-900 dark:text-white' : 'text-slate-400 hover:text-slate-600 dark:-zinc-'}`}
                         >
                             Cadastrar
                         </button>
@@ -126,11 +126,11 @@ function LoginContent() {
                                         <div className="flex items-center gap-4 mb-2">
                                             {avatarFile ? (
                                                 <div
-                                                    className="size-16 rounded-2xl bg-cover bg-center shadow-inner border border-slate-200 dark:border-slate-700 shrink-0"
+                                                    className="size-16 rounded-2xl bg-cover bg-center shadow-inner border border-slate-200 dark:border-zinc-700 shrink-0"
                                                     style={{ backgroundImage: `url(${URL.createObjectURL(avatarFile)})` }}
                                                 />
                                             ) : (
-                                                <div className="size-16 rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 text-slate-400 flex items-center justify-center shrink-0">
+                                                <div className="size-16 rounded-2xl bg-slate-50 dark:bg-zinc-900 border-2 border-dashed border-slate-200 dark:border-zinc-800 text-slate-400 flex items-center justify-center shrink-0">
                                                     <span className="material-symbols-outlined">add_a_photo</span>
                                                 </div>
                                             )}
@@ -139,7 +139,7 @@ function LoginContent() {
                                                     setAvatarFile(e.target.files[0]);
                                                 }
                                             }} />
-                                            <label htmlFor="avatar-upload" className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-colors">
+                                            <label htmlFor="avatar-upload" className="cursor-pointer bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:-zinc- text-slate-600 dark:text-zinc-300 px-4 py-2 rounded-xl text-xs font-bold transition-colors">
                                                 Escolher Foto
                                             </label>
                                         </div>
@@ -150,7 +150,7 @@ function LoginContent() {
                                             Nome Completo
                                         </label>
                                         <input
-                                            className="h-14 px-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium"
+                                            className="h-14 px-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium"
                                             id="name"
                                             name="name"
                                             type="text"
@@ -167,7 +167,7 @@ function LoginContent() {
                                 Email
                             </label>
                             <input
-                                className="h-14 px-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium"
+                                className="h-14 px-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium"
                                 id="email"
                                 name="email"
                                 type="email"
@@ -186,7 +186,7 @@ function LoginContent() {
                                 )}
                             </div>
                             <input
-                                className="h-14 px-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium"
+                                className="h-14 px-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium"
                                 id="password"
                                 name="password"
                                 type="password"
@@ -210,7 +210,7 @@ function LoginContent() {
                                         </label>
                                     </div>
                                     <input
-                                        className="h-14 px-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium"
+                                        className="h-14 px-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium"
                                         id="confirm_password"
                                         name="confirm_password"
                                         type="password"
@@ -223,7 +223,7 @@ function LoginContent() {
 
                         <button
                             formAction={isLogin ? login : signup}
-                            className="mt-6 h-14 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black tracking-widest uppercase hover:scale-[1.02] active:scale-95 transition-all shadow-xl hover:shadow-2xl"
+                            className="mt-6 h-14 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-zinc-900 font-black tracking-widest uppercase hover:scale-[1.02] active:scale-95 transition-all shadow-xl hover:shadow-2xl"
                         >
                             {isLogin ? "Autenticar" : "Criar Conta"}
                         </button>
@@ -243,7 +243,7 @@ function LoginContent() {
 export default function LoginPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+            <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-zinc-950">
                 <div className="size-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
         }>

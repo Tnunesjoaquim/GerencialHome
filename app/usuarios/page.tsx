@@ -287,7 +287,7 @@ export default function Usuarios() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="flex flex-col gap-1">
             <h1 className="text-3xl md:text-4xl font-black leading-tight tracking-tight text-slate-900 dark:text-white">Gestão de Usuários</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base">Administre permissões e fluxos de trabalho da equipe centralizada (Estilo Discord).</p>
+            <p className="text-slate-500 dark:text-zinc-400 text-sm md:text-base">Administre permissões e fluxos de trabalho da equipe centralizada (Estilo Discord).</p>
           </div>
           <button
             onClick={() => { 
@@ -311,14 +311,14 @@ export default function Usuarios() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
             <div>
               <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Total Equipe</p>
               <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{loading ? '-' : users.length}</p>
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
             <div>
               <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Membros: Administrador</p>
               <p className="text-3xl font-black tracking-tight text-[#16a34a]">
@@ -327,7 +327,7 @@ export default function Usuarios() {
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
             <div>
               <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Membros: Membro (Staff)</p>
               <p className="text-3xl font-black tracking-tight text-[#3b82f6]">
@@ -338,27 +338,27 @@ export default function Usuarios() {
         </div>
 
         {/* Table */}
-        <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-x-auto scrollbar-thin mt-4">
+        <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl overflow-x-auto scrollbar-thin mt-4">
           {/* Desktop Table (Hidden on Mobile) */}
           <table className="hidden md:table w-full text-left border-collapse min-w-[900px]">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/50">
+              <tr className="bg-slate-50 dark:bg-zinc-800/50">
                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Colaborador</th>
                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Cargos (Roles)</th>
                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                <tr key={user.id} className="hover:bg-slate-50/50 dark:-zinc-/30 transition-colors group">
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-4">
                       {user.avatar_url ? (
-                        <div className="size-10 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div className="size-10 rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-700 shadow-sm">
                           <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
                         </div>
                       ) : (
-                        <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-xs text-slate-400 border border-slate-200 dark:border-slate-700">{user.initials}</div>
+                        <div className="size-10 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center font-black text-xs text-slate-400 border border-slate-200 dark:border-zinc-700">{user.initials}</div>
                       )}
                       <div>
                         <span className="font-bold text-slate-900 dark:text-white uppercase tracking-tight block flex items-center gap-2">
@@ -370,7 +370,7 @@ export default function Usuarios() {
                           )}
                         </span>
                         {user.nickname ? (
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">@{user.nickname}</span>
+                          <span className="text-[10px] text-slate-500 dark:text-zinc-400 block font-bold">@{user.nickname}</span>
                         ) : (
                           <span className="text-[10px] text-slate-400 block">{user.isPending ? user.email : user.id.substring(0, 8)}</span>
                         )}
@@ -389,12 +389,12 @@ export default function Usuarios() {
                   <td className="px-8 py-5 text-right">
                     <div className="flex justify-end gap-3">
                       {true && !user.isPending && (
-                        <button onClick={() => openEdit(user)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-primary transition-colors shadow-sm" title="Editar">
+                        <button onClick={() => openEdit(user)} className="size-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 hover:text-primary transition-colors shadow-sm" title="Editar">
                           <span className="material-symbols-outlined text-[16px]">edit</span>
                         </button>
                       )}
                       {true && user.roleName !== 'Owner' && (
-                        <button onClick={() => handleDelete(user.id, user.isPending, user.inviteId)} className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors shadow-sm" title={user.isPending ? "Cancelar Convite" : "Excluir"}>
+                        <button onClick={() => handleDelete(user.id, user.isPending, user.inviteId)} className="size-8 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors shadow-sm" title={user.isPending ? "Cancelar Convite" : "Excluir"}>
                           <span className="material-symbols-outlined text-[16px]">{user.isPending ? 'cancel' : 'delete'}</span>
                         </button>
                       )}
@@ -406,17 +406,17 @@ export default function Usuarios() {
           </table>
 
           {/* Mobile Cards (Hidden on Desktop) */}
-          <div className="md:hidden flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="md:hidden flex flex-col divide-y divide-slate-100 dark:divide-zinc-800">
             {users.map((user) => (
-              <div key={user.id} className="flex flex-col gap-4 p-5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+              <div key={user.id} className="flex flex-col gap-4 p-5 hover:bg-slate-50/50 dark:-zinc-/30 transition-colors">
                 <div className="flex items-center gap-4">
                   {/* Avatar */}
                   {user.avatar_url ? (
-                    <div className="size-12 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm shrink-0">
+                    <div className="size-12 rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-700 shadow-sm shrink-0">
                       <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
                     </div>
                   ) : (
-                    <div className="size-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-sm text-slate-400 border border-slate-200 dark:border-slate-700 shrink-0">{user.initials}</div>
+                    <div className="size-12 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center font-black text-sm text-slate-400 border border-slate-200 dark:border-zinc-700 shrink-0">{user.initials}</div>
                   )}
                   <div className="flex-1 min-w-0">
                     <span className="font-bold text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2 flex-wrap">
@@ -428,7 +428,7 @@ export default function Usuarios() {
                       )}
                     </span>
                     {user.nickname ? (
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold truncate">@{user.nickname}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-zinc-400 block font-bold truncate">@{user.nickname}</span>
                     ) : (
                       <span className="text-[10px] text-slate-400 block truncate">{user.isPending ? user.email : user.id.substring(0, 8)}</span>
                     )}
@@ -443,9 +443,9 @@ export default function Usuarios() {
                   )) : <span className="text-xs italic text-slate-400">Sem Cargo</span>}
                 </div>
 
-                <div className="flex justify-end gap-3 mt-1 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+                <div className="flex justify-end gap-3 mt-1 pt-4 border-t border-slate-100 dark:border-zinc-800/50">
                   {true && !user.isPending && (
-                    <button onClick={() => openEdit(user)} className="flex-1 h-10 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-primary transition-colors shadow-sm text-xs font-bold gap-2 uppercase tracking-widest" title="Editar">
+                    <button onClick={() => openEdit(user)} className="flex-1 h-10 px-4 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-600 dark:text-zinc-300 hover:text-primary transition-colors shadow-sm text-xs font-bold gap-2 uppercase tracking-widest" title="Editar">
                       <span className="material-symbols-outlined text-[16px]">edit</span> Editar
                     </button>
                   )}
@@ -459,7 +459,7 @@ export default function Usuarios() {
             ))}
           </div>
           {users.length === 0 && !loading && (
-            <div className="p-10 text-center text-slate-500 dark:text-slate-400 font-bold">Nenhum colaborador carregado do banco de dados.</div>
+            <div className="p-10 text-center text-slate-500 dark:text-zinc-400 font-bold">Nenhum colaborador carregado do banco de dados.</div>
           )}
         </div>
       </main>
@@ -468,8 +468,8 @@ export default function Usuarios() {
         {isModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" />
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[32px] p-8 md:p-10 shadow-2xl overflow-y-auto max-h-[90vh]">
-              <div className="flex flex-col items-center text-center mb-8 pb-6 border-b border-slate-100 dark:border-slate-800">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-[32px] p-8 md:p-10 shadow-2xl overflow-y-auto max-h-[90vh]">
+              <div className="flex flex-col items-center text-center mb-8 pb-6 border-b border-slate-100 dark:border-zinc-800">
                 <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">{editingUser ? 'Ajustar Perfil e Cargos' : 'Novo Colaborador'}</h2>
                 <p className="text-slate-400 text-sm font-bold mt-2">Gerencie permissões no formato Discord.</p>
               </div>
@@ -479,7 +479,7 @@ export default function Usuarios() {
                   <div className="relative group">
                     {editingUser?.avatar_url || avatarFile ? (
                       <div
-                        className="size-16 rounded-2xl bg-cover bg-center shadow-inner border border-slate-200 dark:border-slate-700 shrink-0"
+                        className="size-16 rounded-2xl bg-cover bg-center shadow-inner border border-slate-200 dark:border-zinc-700 shrink-0"
                         style={{ backgroundImage: `url(${avatarFile ? URL.createObjectURL(avatarFile) : editingUser?.avatar_url})` }}
                       />
                     ) : (
@@ -487,11 +487,11 @@ export default function Usuarios() {
                         {getInitials(formData.full_name || formData.email)}
                       </div>
                     )}
-                    <div className="absolute -bottom-1 -right-1 size-5 bg-green-500 border-2 border-white dark:border-slate-800 rounded-full"></div>
+                    <div className="absolute -bottom-1 -right-1 size-5 bg-green-500 border-2 border-white dark:border-zinc-800 rounded-full"></div>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300">
+                    <label className="cursor-pointer bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:-zinc- transition-colors px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-300">
                       Alterar Imagem
                       <input
                         type="file"
@@ -513,7 +513,7 @@ export default function Usuarios() {
                     type="text"
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
+                    className="w-full h-14 bg-slate-50 dark:bg-zinc-800 border-2 border-slate-100 dark:border-zinc-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
                   />
                 </div>
 
@@ -525,7 +525,7 @@ export default function Usuarios() {
                       placeholder="@seunick"
                       value={formData.nickname}
                       onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
-                      className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
+                      className="w-full h-14 bg-slate-50 dark:bg-zinc-800 border-2 border-slate-100 dark:border-zinc-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
                     />
                   </div>
                 ) : (
@@ -537,7 +537,7 @@ export default function Usuarios() {
                         placeholder="email@exemplo.com"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
+                        className="w-full h-14 bg-slate-50 dark:bg-zinc-800 border-2 border-slate-100 dark:border-zinc-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
                       />
                     </div>
                     <div>
@@ -547,7 +547,7 @@ export default function Usuarios() {
                         placeholder="Defina uma senha"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="w-full h-14 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
+                        className="w-full h-14 bg-slate-50 dark:bg-zinc-800 border-2 border-slate-100 dark:border-zinc-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
                       />
                     </div>
                   </>
@@ -557,7 +557,7 @@ export default function Usuarios() {
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Atribuir Cargos (Roles)</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {editingUser?.roleName === 'Owner' ? (
-                      <div className="sm:col-span-2 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center gap-4 opacity-75">
+                      <div className="sm:col-span-2 p-4 rounded-xl border-2 border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 flex items-center gap-4 opacity-75">
                         <div className="size-10 rounded-full flex items-center justify-center font-black" style={{ backgroundColor: `#9333ea20`, color: '#9333ea' }}>
                           <span className="material-symbols-outlined">shield_person</span>
                         </div>
@@ -575,7 +575,7 @@ export default function Usuarios() {
                             onClick={() => toggleRoleSelection(role.id)}
                             className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected
                               ? 'border-primary bg-primary/5 dark:bg-primary/10'
-                              : 'border-slate-200 dark:border-slate-800 hover:border-primary/50 bg-white dark:bg-slate-900'
+                              : 'border-slate-200 dark:border-zinc-800 hover:border-primary/50 bg-white dark:bg-zinc-900'
                               }`}
                           >
                             <div className="size-10 rounded-full flex items-center justify-center font-black" style={{ backgroundColor: `${role.color}20`, color: role.color }}>
@@ -584,7 +584,7 @@ export default function Usuarios() {
                             <div className="flex-1">
                               <h4 className={`font-bold ${isSelected ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>{role.name}</h4>
                             </div>
-                            <div className={`size-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-primary bg-primary' : 'border-slate-300 dark:border-slate-700'}`}>
+                            <div className={`size-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-primary bg-primary' : 'border-slate-300 dark:border-zinc-700'}`}>
                               {isSelected && <span className="material-symbols-outlined text-white text-sm font-black">check</span>}
                             </div>
                           </div>
@@ -599,7 +599,7 @@ export default function Usuarios() {
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Atribuir às Residências</label>
                     <div className="flex flex-col gap-2">
                       {ownedResidences.map(res => (
-                        <label key={res.id} className="flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-primary/50 cursor-pointer bg-slate-50 dark:bg-slate-900 transition-colors">
+                        <label key={res.id} className="flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 dark:border-zinc-700 hover:border-primary/50 cursor-pointer bg-slate-50 dark:bg-zinc-900 transition-colors">
                           <input
                             type="checkbox"
                             className="size-5 rounded border-slate-300 text-primary focus:ring-primary"
@@ -630,7 +630,7 @@ export default function Usuarios() {
                     "Salvar"
                   )}
                 </button>
-                <button onClick={() => setIsModalOpen(false)} disabled={isUploading} className="w-full h-14 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-all disabled:opacity-50">Cancelar</button>
+                <button onClick={() => setIsModalOpen(false)} disabled={isUploading} className="w-full h-14 bg-slate-100 dark:bg-zinc-800 text-slate-500 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 dark:-zinc- transition-all disabled:opacity-50">Cancelar</button>
               </div>
             </motion.div>
           </div>
