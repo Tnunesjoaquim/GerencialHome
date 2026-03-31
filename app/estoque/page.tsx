@@ -362,20 +362,22 @@ export default function Estoque() {
                           <span className="font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{item.name}</span>
                           {item.obs && <span className="text-[10px] text-slate-400 italic font-medium">{item.obs}</span>}
                         </div>
-                        <span className={`px-3 py-1.5 rounded-full font-black text-[10px] uppercase tracking-widest flex-shrink-0 ${item.currentStock <= item.minStock
-                          ? 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-900'
-                          : 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400 border border-green-200 dark:border-green-900'
-                          }`}>
-                          Estoque: {item.currentStock} {item.unit}
-                        </span>
+                        <div className="flex flex-col gap-1 items-end mt-1 shrink-0">
+                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">Mínimo</span>
+                          <span className="font-black text-slate-700 dark:text-zinc-300 leading-none">{item.minStock} {item.unit}</span>
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-2 mt-2 bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-2xl border border-slate-100 dark:border-zinc-800">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Mínimo</span>
-                          <span className="font-black text-slate-700 dark:text-zinc-300">{item.minStock} {item.unit}</span>
+                        <div className="flex flex-col gap-1 justify-center items-start">
+                          <span className={`px-3 py-1.5 rounded-full font-black text-[10px] uppercase tracking-widest text-center ${item.currentStock <= item.minStock
+                            ? 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-900'
+                            : 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400 border border-green-200 dark:border-green-900'
+                            }`}>
+                            Estoque: {item.currentStock} {item.unit}
+                          </span>
                         </div>
-                        <div className="flex flex-col gap-1 items-end">
+                        <div className="flex flex-col gap-1 items-end justify-center">
                           <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Vencimento</span>
                           <span className={`font-bold text-sm ${isExpired(item.expiry) ? 'text-red-500 animate-pulse' : 'text-slate-600 dark:text-zinc-400'}`}>{formatExpiry(item.expiry)}</span>
                         </div>
