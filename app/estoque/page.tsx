@@ -202,6 +202,33 @@ export default function Estoque() {
     setDeleteConfirmModal(null);
   };
 
+  const handleDecreaseStock = async (categoryId: string, item: Item) => {
+    if (item.currentStock <= 0) return;
+    
+    const newStock = item.currentStock - 1;
+    
+    // Optistic UI update for immediate feedback
+    setCategories(categories.map(cat => 
+      cat.id === categoryId 
+        ? { ...cat, items: cat.items.map(i => i.id === item.id ? { ...i, currentStock: newStock } : i) }
+        : cat
+    ));
+
+    const { error } = await supabase.from('inventory_items').update({
+      current_stock: newStock
+    }).eq('id', item.id);
+
+    if (error) {
+      // Revert on error
+      setCategories(categories.map(cat => 
+        cat.id === categoryId 
+          ? { ...cat, items: cat.items.map(i => i.id === item.id ? { ...i, currentStock: item.currentStock } : i) }
+          : cat
+      ));
+      alert('Erro ao atualizar estoque: ' + error.message);
+    }
+  };
+
   const formatExpiry = (dateStr: string) => {
     if (!dateStr) return '--';
     if (dateStr.includes('/')) return dateStr;
@@ -362,6 +389,14 @@ export default function Estoque() {
                           <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase truncate max-w-[100px]">{item.responsible}</span>
                         </div>
                         <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => handleDecreaseStock(category.id, item)} 
+                            disabled={item.currentStock <= 0}
+                            className="size-10 rounded-xl bg-orange-50 dark:bg-orange-950/20 text-orange-500 hover:text-orange-600 transition-colors flex items-center justify-center border border-orange-100 dark:border-orange-900/30 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Consumir 1 unidade"
+                          >
+                            <span className="material-symbols-outlined text-lg">remove</span>
+                          </button>
                           <button onClick={() => openEditItem(category.id, item)} className="size-10 rounded-xl bg-white dark:bg-zinc-800 text-slate-400 hover:text-primary transition-colors flex items-center justify-center border border-slate-200 dark:border-zinc-700 shadow-sm">
                             <span className="material-symbols-outlined text-lg">edit</span>
                           </button>
@@ -429,6 +464,14 @@ export default function Estoque() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button 
+                                  onClick={() => handleDecreaseStock(category.id, item)} 
+                                  disabled={item.currentStock <= 0}
+                                  className="size-8 rounded-lg bg-orange-50 dark:bg-orange-950/20 text-orange-500 hover:text-orange-600 transition-colors flex items-center justify-center shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Consumir 1 unidade"
+                                >
+                                  <span className="material-symbols-outlined text-lg">remove</span>
+                                </button>
                                 <button onClick={() => openEditItem(category.id, item)} className="size-8 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-500 hover:text-primary transition-colors flex items-center justify-center shadow-sm">
                                   <span className="material-symbols-outlined text-lg">edit</span>
                                 </button>
