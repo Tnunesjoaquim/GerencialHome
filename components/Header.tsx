@@ -301,15 +301,24 @@ export function Header({ activeTab }: { activeTab: string }) {
               </nav>
 
               {/* Sidebar Footer */}
-              <div className="p-6 border-t border-slate-100 dark:border-slate-800">
+              <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3">
                 <Link
-                  href="/"
+                  href="/selecionar-residencia"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full h-14 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full h-14 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
-                  <span className="material-symbols-outlined">logout</span>
-                  Sair das Residências
+                  <span className="material-symbols-outlined">home_work</span>
+                  Trocar Residência
                 </Link>
+                <form action={logout} className="w-full">
+                  <button
+                    type="submit"
+                    className="flex items-center justify-center gap-2 w-full h-14 rounded-2xl border border-red-200 dark:border-red-900/50 text-red-500 dark:text-red-400 font-bold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  >
+                    <span className="material-symbols-outlined">logout</span>
+                    Sair da Conta
+                  </button>
+                </form>
               </div>
             </motion.div>
           </div>
