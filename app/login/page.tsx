@@ -14,6 +14,8 @@ function LoginContent() {
     const [avatarFile, setAvatarFile] = useState<File | null>(null)
     const { theme, toggleTheme } = useTheme()
     const [mounted, setMounted] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
     useEffect(() => { setMounted(true) }, [])
 
@@ -199,15 +201,25 @@ function LoginContent() {
                                     <a href="#" className="text-xs font-bold text-primary hover:underline">Esqueceu?</a>
                                 )}
                             </div>
-                            <input
-                                className="h-14 px-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium"
-                                id="access_key"
-                                name="access_key"
-                                type="password"
-                                placeholder="••••••••"
-                                autoComplete="new-password"
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    className="w-full h-14 pl-5 pr-14 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium"
+                                    id="access_key"
+                                    name="access_key"
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="••••••••"
+                                    autoComplete="new-password"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors flex items-center justify-center p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800/80"
+                                    title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                                >
+                                    <span className="material-symbols-outlined text-lg">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                                </button>
+                            </div>
                         </div>
 
                         <AnimatePresence mode="popLayout">
@@ -224,15 +236,25 @@ function LoginContent() {
                                             Confirmar Senha
                                         </label>
                                     </div>
-                                    <input
-                                        className="h-14 px-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium"
-                                        id="confirm_access_key"
-                                        name="confirm_access_key"
-                                        type="password"
-                                        placeholder="••••••••"
-                                        autoComplete="new-password"
-                                        required={!isLogin}
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            className="w-full h-14 pl-5 pr-14 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:border-primary dark:focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 dark:text-white shadow-sm font-medium"
+                                            id="confirm_access_key"
+                                            name="confirm_access_key"
+                                            type={showConfirmPassword ? 'text' : 'password'}
+                                            placeholder="••••••••"
+                                            autoComplete="new-password"
+                                            required={!isLogin}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors flex items-center justify-center p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800/80"
+                                            title={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
+                                        >
+                                            <span className="material-symbols-outlined text-lg">{showConfirmPassword ? 'visibility_off' : 'visibility'}</span>
+                                        </button>
+                                    </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
