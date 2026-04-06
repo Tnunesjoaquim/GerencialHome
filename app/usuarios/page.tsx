@@ -54,6 +54,7 @@ export default function Usuarios() {
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const getInitials = (name: string) => {
     if (!name) return '??';
@@ -542,13 +543,22 @@ export default function Usuarios() {
                     </div>
                     <div>
                       <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Senha de Acesso</label>
-                      <input
-                        type="password"
-                        placeholder="Defina uma senha"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="w-full h-14 bg-slate-50 dark:bg-zinc-800 border-2 border-slate-100 dark:border-zinc-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
-                      />
+                      <div className="relative">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Defina uma senha"
+                          value={formData.password}
+                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                          className="w-full h-14 bg-slate-50 dark:bg-zinc-800 border-2 border-slate-100 dark:border-zinc-700 rounded-2xl px-5 font-bold text-slate-900 dark:text-white focus:outline-none focus:border-primary transition-colors pr-12"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors flex items-center justify-center p-2 rounded-full hover:bg-slate-200 dark:hover:bg-zinc-700"
+                        >
+                          <span className="material-symbols-outlined">{showPassword ? "visibility_off" : "visibility"}</span>
+                        </button>
+                      </div>
                     </div>
                   </>
                 )}

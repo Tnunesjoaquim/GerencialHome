@@ -68,10 +68,7 @@ export function ItemModal({ onClose, onSave, initialData, isEditing = false, def
               <option value="ML">ML</option>
             </select>
           </div>
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Estoque Min.</label>
-            <input type="number" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-zinc-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={data.minStock} onChange={(e) => setData({ ...data, minStock: Number(e.target.value) })} />
-          </div>
+
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Estoque Atual</label>
             <input type="number" className="w-full p-4 rounded-xl bg-slate-100 dark:bg-zinc-800 outline-none focus:ring-2 focus:ring-primary dark:text-white" value={data.currentStock} onChange={(e) => setData({ ...data, currentStock: Number(e.target.value) })} />

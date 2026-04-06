@@ -45,10 +45,10 @@ export default function Financeiro() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
-  const [newBill, setNewBill] = useState<Omit<Bill, 'id' | 'status'>>({
+  const [newBill, setNewBill] = useState<{ category: string, description: string, amount: string | number, dueDate: string, icon: string }>({
     category: '',
     description: '',
-    amount: 0,
+    amount: '',
     dueDate: new Date().toISOString().split('T')[0],
     icon: 'payments'
   });
@@ -85,26 +85,27 @@ export default function Financeiro() {
   };
 
   const handleSave = async () => {
-    if (!newBill.category || newBill.amount <= 0 || !residence?.id) return;
+    const parsedAmount = typeof newBill.amount === 'string' ? parseFloat(newBill.amount.replace(',', '.')) : newBill.amount;
+    if (!newBill.category || isNaN(parsedAmount) || parsedAmount <= 0 || !residence?.id) return;
 
     if (editingBill) {
       const { error } = await supabase.from('financial_transactions').update({
         category: newBill.category,
         description: newBill.description,
-        amount: newBill.amount,
+        amount: parsedAmount,
         due_date: newBill.dueDate,
         icon: newBill.icon
       }).eq('id', editingBill.id);
 
       if (!error) {
-        setBills(bills.map(b => b.id === editingBill.id ? { ...editingBill, ...newBill } : b));
+        setBills(bills.map(b => b.id === editingBill.id ? { ...editingBill, ...newBill, amount: parsedAmount } : b));
       }
     } else {
       const { data, error } = await supabase.from('financial_transactions').insert([{
         residence_id: residence.id,
         category: newBill.category,
         description: newBill.description,
-        amount: newBill.amount,
+        amount: parsedAmount,
         due_date: newBill.dueDate,
         status: 'Pendente',
         icon: newBill.icon
@@ -125,7 +126,7 @@ export default function Financeiro() {
 
     setIsModalOpen(false);
     setEditingBill(null);
-    setNewBill({ category: '', description: '', amount: 0, dueDate: new Date().toISOString().split('T')[0], icon: 'payments' });
+    setNewBill({ category: '', description: '', amount: '', dueDate: new Date().toISOString().split('T')[0], icon: 'payments' });
   };
 
   const openEdit = (bill: Bill) => {
@@ -397,10 +398,16 @@ export default function Financeiro() {
                   <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Valor (R$)</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       className="w-full h-14 px-6 rounded-2xl bg-slate-100 dark:bg-zinc-800 outline-none focus:ring-2 focus:ring-primary dark:text-white font-black text-lg"
                       value={newBill.amount}
-                      onChange={(e) => setNewBill({ ...newBill, amount: Number(e.target.value) })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (/^[0-9.,]*$/.test(val)) {
+                          setNewBill({ ...newBill, amount: val });
+                        }
+                      }}
                     />
                   </div>
                   <div className="flex flex-col gap-1">

@@ -81,7 +81,7 @@ export default function Estoque() {
 
   const [newCatName, setNewCatName] = useState('');
   const [newItemData, setNewItemData] = useState<Omit<Item, 'id'>>({
-    name: '', unit: 'Unidade', minStock: 0, currentStock: 0, expiry: '', responsible: '', obs: ''
+    name: '', unit: 'Unidade', minStock: 1, currentStock: 0, expiry: '', responsible: '', obs: ''
   });
 
   const handleAddCategory = async (catName: string) => {
@@ -129,7 +129,7 @@ export default function Estoque() {
       const { error } = await supabase.from('inventory_items').update({
         name: itemData.name,
         unit: itemData.unit,
-        min_stock: itemData.minStock,
+        min_stock: 1,
         current_stock: itemData.currentStock,
         expiry: itemData.expiry,
         responsible: itemData.responsible,
@@ -150,7 +150,7 @@ export default function Estoque() {
         category_id: activeItemModal.categoryId,
         name: itemData.name,
         unit: itemData.unit,
-        min_stock: itemData.minStock,
+        min_stock: 1,
         current_stock: itemData.currentStock,
         expiry: itemData.expiry,
         responsible: itemData.responsible,
@@ -174,7 +174,7 @@ export default function Estoque() {
     setNewItemData({
       name: item.name,
       unit: item.unit,
-      minStock: item.minStock,
+      minStock: 1,
       currentStock: item.currentStock,
       expiry: item.expiry,
       responsible: item.responsible,
@@ -338,7 +338,7 @@ export default function Estoque() {
                   <button
                     onClick={() => {
                       setEditingItem(null);
-                      setNewItemData({ name: '', unit: 'Unidade', minStock: 0, currentStock: 0, expiry: '', responsible: 'João Silva', obs: '' });
+                      setNewItemData({ name: '', unit: 'Unidade', minStock: 1, currentStock: 0, expiry: '', responsible: 'João Silva', obs: '' });
                       setActiveItemModal({ categoryId: category.id });
                     }}
                     className="flex items-center gap-1 text-primary text-xs font-black uppercase hover:underline ml-2"
@@ -363,14 +363,13 @@ export default function Estoque() {
                           {item.obs && <span className="text-[10px] text-slate-400 italic font-medium">{item.obs}</span>}
                         </div>
                         <div className="flex flex-col gap-1 items-end mt-1 shrink-0">
-                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">Mínimo</span>
-                          <span className="font-black text-slate-700 dark:text-zinc-300 leading-none">{item.minStock} {item.unit}</span>
+                          {/* Campo Mínimo Ocultado conforme solicitação */}
                         </div>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-2 mt-2 bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-2xl border border-slate-100 dark:border-zinc-800">
                         <div className="flex flex-col gap-1 justify-center items-start">
-                          <span className={`px-3 py-1.5 rounded-full font-black text-[10px] uppercase tracking-widest text-center ${item.currentStock <= item.minStock
+                          <span className={`px-3 py-1.5 rounded-full font-black text-[10px] uppercase tracking-widest text-center ${item.currentStock <= 1
                             ? 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-900'
                             : 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400 border border-green-200 dark:border-green-900'
                             }`}>
@@ -422,8 +421,7 @@ export default function Estoque() {
                     <tr className="bg-slate-50/50 dark:bg-zinc-800/30 text-slate-500 dark:text-zinc-400 font-bold uppercase text-[10px] tracking-widest">
                       <th className="px-6 py-4">Produto</th>
                       <th className="px-6 py-4">Unidade</th>
-                      <th className="px-6 py-4">Mínimo</th>
-                      <th className="px-6 py-4">Atual</th>
+                      <th className="px-6 py-4">Estoque Atual</th>
                       <th className="px-6 py-4">Vencimento</th>
                       <th className="px-6 py-4">Responsável</th>
                       <th className="px-6 py-4 text-center">Ações</th>
@@ -444,9 +442,8 @@ export default function Estoque() {
                             </div>
                           </td>
                           <td className="px-6 py-4 text-slate-600 dark:text-zinc-400 font-medium">{item.unit}</td>
-                          <td className="px-6 py-4 font-bold text-slate-400">{item.minStock}</td>
                           <td className="px-6 py-4">
-                            <span className={`px-3 py-1 rounded-full font-black text-xs ${item.currentStock <= item.minStock
+                            <span className={`px-3 py-1 rounded-full font-black text-xs ${item.currentStock <= 1
                               ? 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400'
                               : 'bg-green-100 text-green-600 dark:bg-green-950/40 dark:text-green-400'
                               }`}>

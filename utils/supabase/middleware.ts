@@ -38,9 +38,11 @@ export async function updateSession(request: NextRequest) {
     const isLoginPath = request.nextUrl.pathname.startsWith('/login')
     const isSelectResidencePath = request.nextUrl.pathname.startsWith('/selecionar-residencia')
     const isAuthPath = request.nextUrl.pathname.startsWith('/auth')
+    const isRecoverPath = request.nextUrl.pathname.startsWith('/recuperar-senha')
+    const isResetPath = request.nextUrl.pathname.startsWith('/redefinir-senha')
     const isRootPath = request.nextUrl.pathname === '/'
 
-    if (!user && !isLoginPath && !isAuthPath) {
+    if (!user && !isLoginPath && !isAuthPath && !isRecoverPath && !isResetPath) {
         // no user, potentially respond by redirecting the user to the login page
         const url = request.nextUrl.clone()
         url.pathname = '/login'
